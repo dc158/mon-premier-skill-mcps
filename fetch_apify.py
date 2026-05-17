@@ -16,7 +16,7 @@ def get_top_posts(search_query, max_results=5):
     }
 
     try:
-        run = client.actor("clockworks/tiktok-scraper").call(global_options={"timeout": 90}, run_input=run_input)
+        run = client.actor("clockworks/tiktok-scraper").call(run_input=run_input, timeout_secs=90)
         posts = []
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             likes = item.get("diggCount", 0)
