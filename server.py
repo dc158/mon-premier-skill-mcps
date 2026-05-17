@@ -1,8 +1,12 @@
-import json
+from mcp.server.fastmcp import FastMCP
 
-# Voici ton premier outil personnalisé (Skill)
-def analyser_priorite(tache, urgence, importance):
-    score = int(urgence) * int(importance)
+mcp = FastMCP("analyseur-priorite")
+
+
+@mcp.tool()
+def analyser_priorite(tache: str, urgence: int, importance: int) -> str:
+    """Détermine la priorité d'une tâche selon son urgence et son importance (notes de 1 à 10)."""
+    score = urgence * importance
     if score > 70:
         return f"🔥 PRIORITÉ MAX : '{tache}' (Score: {score}/100)"
     elif score > 40:
@@ -10,9 +14,6 @@ def analyser_priorite(tache, urgence, importance):
     else:
         return f"☕ TRÈS CALME : '{tache}' (Score: {score}/100)"
 
-# Métadonnées pour que Claude comprenne comment utiliser le skill
-metadata = {
-    "name": "analyseur_priorite",
-    "description": "Détermine la priorité d'une tâche (notes de 1 à 10)",
-    "parameters": ["tache", "urgence", "importance"]
-}
+
+if __name__ == "__main__":
+    mcp.run()
