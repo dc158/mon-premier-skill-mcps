@@ -2,11 +2,16 @@ services:
   - type: web
     name: webdesign-co-webhook
     runtime: python
+    region: frankfurt
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python server.py --webhook
+    healthCheckPath: /health
     envVars:
       - key: WEBHOOK_SECRET
         generateValue: true
       - key: PORT
         value: 10000
+      - key: APIFY_TOKEN
+        sync: false
     autoDeploy: true
