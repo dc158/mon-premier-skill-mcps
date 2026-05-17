@@ -499,7 +499,8 @@ def run_webhook_server():
     async def webhook_publier_tous_reseaux(request: Request):
         """
         Génère le contenu pour TikTok, LinkedIn et Instagram en une seule requête.
-        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
+        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique",
+                      "image_url": "https://...", "date_publication": "2025-01-15T10:00:00" }
         Header requis : X-Webhook-Secret
         """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
@@ -509,10 +510,14 @@ def run_webhook_server():
             raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
         marche = data.get("marche", "france")
         ton = data.get("ton", "professionnel")
+        image_url = data.get("image_url", "")
+        date_publication = data.get("date_publication", "")
         return JSONResponse({
             "status": "success",
             "sujet": sujet,
             "marche": marche,
+            "image_url": image_url,
+            "date_publication": date_publication,
             "publications": {
                 "tiktok": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
                 "linkedin": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
