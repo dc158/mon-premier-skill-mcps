@@ -1,7 +1,9 @@
 from mcp.server.fastmcp import FastMCP
 from datetime import datetime, timedelta
 import json
+import os
 import random
+import sys
 
 mcp = FastMCP("webdesign-co-community-manager")
 
@@ -427,5 +429,145 @@ def generer_legende(
     return legende
 
 
+def run_webhook_server():
+    """Serveur HTTP pour Make.com — lance avec : python server.py --webhook"""
+    from fastapi import FastAPI, Request, HTTPException, Header
+    from fastapi.responses import JSONResponse
+    import uvicorn
+
+    WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "webdesign-co-secret")
+
+    app = FastAPI(
+        title="Webdesign & Co — Webhook Make.com",
+        description="API webhook pour publier automatiquement sur TikTok, LinkedIn et Instagram",
+        version="1.0.0",
+    )
+
+    def verifier_secret(x_webhook_secret: str = Header(default="")):
+        if x_webhook_secret != WEBHOOK_SECRET:
+            raise HTTPException(status_code=401, detail="Secret invalide.")
+
+    @app.get("/health")
+    async def health():
+        return {"status": "ok", "service": "Webdesign & Co Webhook"}
+
+    @app.post("/webhook/generer-contenu")
+    async def webhook_generer_contenu(request: Request):
+        """
+        Génère un post complet pour un réseau social.
+        Body JSON : { "sujet": "...", "reseau": "tiktok|linkedin|instagram",
+                      "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
+        Header requis : X-Webhook-Secret
+        """
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        sujet = data.get("sujet", "")
+        if not sujet:
+            raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
+        contenu = generer_contenu(
+            sujet=sujet,
+            reseau=data.get("reseau", "instagram"),
+            marche=data.get("marche", "france"),
+            ton=data.get("ton", "professionnel"),
+        )
+        return JSONResponse({"status": "success", "reseau": data.get("reseau"), "marche": data.get("marche"), "contenu": contenu})
+
+    @app.post("/webhook/publier-tous-reseaux")
+    async def webhook_publier_tous_reseaux(request: Request):
+        """
+        Génère le contenu pour TikTok, LinkedIn et Instagram en une seule requête.
+        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
+        Header requis : X-Webhook-Secret
+        """
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        sujet = data.get("sujet", "")
+        if not sujet:
+            raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
+        marche = data.get("marche", "france")
+        ton = data.get("ton", "professionnel")
+        return JSONResponse({
+            "status": "success",
+            "sujet": sujet,
+            "marche": marche,
+            "publications": {
+                "tiktok": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
+                "linkedin": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
+                "instagram": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+            },
+            "hashtags": {
+                "tiktok": suggerer_hashtags(sujet=sujet, reseau="tiktok", marche=marche, nb_hashtags=8),
+                "linkedin": suggerer_hashtags(sujet=sujet, reseau="linkedin", marche=marche, nb_hashtags=5),
+                "instagram": suggerer_hashtags(sujet=sujet, reseau="instagram", marche=marche, nb_hashtags=15),
+            },
+        })
+
+    @app.post("/webhook/analyser-tendances")
+    async def webhook_analyser_tendances(request: Request):
+        """
+        Retourne les tendances virales pour un marché.
+        Body JSON : { "marche": "france|dubai", "nb_tendances": 5 }
+        Header requis : X-Webhook-Secret
+        """
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        return JSONResponse({
+            "status": "success",
+            "tendances": analyser_tendances(
+                marche=data.get("marche", "france"),
+                nb_tendances=int(data.get("nb_tendances", 5)),
+            ),
+        })
+
+    @app.post("/webhook/planifier-calendrier")
+    async def webhook_planifier_calendrier(request: Request):
+        """
+        Génère un calendrier éditorial hebdomadaire.
+        Body JSON : { "marche": "france|dubai", "semaine_debut": "JJ/MM/AAAA" }
+        Header requis : X-Webhook-Secret
+        """
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        return JSONResponse({
+            "status": "success",
+            "calendrier": planifier_calendrier(
+                marche=data.get("marche", "france"),
+                semaine_debut=data.get("semaine_debut", ""),
+            ),
+        })
+
+    @app.post("/webhook/generer-legende")
+    async def webhook_generer_legende(request: Request):
+        """
+        Génère une légende prête à copier-coller.
+        Body JSON : { "sujet": "...", "reseau": "tiktok|linkedin|instagram",
+                      "marche": "france|dubai", "objectif": "engagement|vente|notoriete" }
+        Header requis : X-Webhook-Secret
+        """
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        sujet = data.get("sujet", "")
+        if not sujet:
+            raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
+        return JSONResponse({
+            "status": "success",
+            "legende": generer_legende(
+                sujet=sujet,
+                reseau=data.get("reseau", "instagram"),
+                marche=data.get("marche", "france"),
+                objectif=data.get("objectif", "engagement"),
+            ),
+        })
+
+    port = int(os.environ.get("PORT", 8000))
+    print(f"🚀 Webhook Webdesign & Co démarré sur http://0.0.0.0:{port}")
+    print(f"📖 Documentation : http://0.0.0.0:{port}/docs")
+    print(f"🔐 Secret actif  : {WEBHOOK_SECRET}")
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
 if __name__ == "__main__":
-    mcp.run()
+    if "--webhook" in sys.argv:
+        run_webhook_server()
+    else:
+        mcp.run()
