@@ -4,6 +4,29 @@ import json
 import os
 import random
 import sys
+import urllib.request
+
+MAKE_WEBHOOK_URL = os.environ.get(
+    "MAKE_WEBHOOK_URL",
+    "https://hook.eu1.make.com/5uob38x8gtk2tsgdsqvslh3tdjg58yw5"
+)
+
+
+def envoyer_vers_make(payload: dict) -> dict:
+    """Envoie un payload JSON vers le webhook Make.com et retourne la réponse."""
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        MAKE_WEBHOOK_URL,
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = resp.read().decode("utf-8")
+            return {"status": "envoyé", "make_response": body, "http_code": resp.status}
+    except Exception as e:
+        return {"status": "erreur", "detail": str(e)}
 
 mcp = FastMCP("webdesign-co-community-manager")
 
@@ -559,10 +582,51 @@ def run_webhook_server():
             ),
         })
 
+    @app.post("/webhook/envoyer-vers-make")
+    async def webhook_envoyer_vers_make(request: Request):
+        """
+        Génère le contenu pour TikTok, LinkedIn et Instagram, puis l'envoie
+        automatiquement vers le webhook Make.com configuré.
+        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
+        Header requis : X-Webhook-Secret
+        """
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        sujet = data.get("sujet", "")
+        if not sujet:
+            raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
+        marche = data.get("marche", "france")
+        ton = data.get("ton", "professionnel")
+
+        payload = {
+            "sujet": sujet,
+            "marche": marche,
+            "publications": {
+                "tiktok": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
+                "linkedin": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
+                "instagram": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+            },
+            "hashtags": {
+                "tiktok": suggerer_hashtags(sujet=sujet, reseau="tiktok", marche=marche, nb_hashtags=8),
+                "linkedin": suggerer_hashtags(sujet=sujet, reseau="linkedin", marche=marche, nb_hashtags=5),
+                "instagram": suggerer_hashtags(sujet=sujet, reseau="instagram", marche=marche, nb_hashtags=15),
+            },
+            "calendrier": planifier_calendrier(marche=marche),
+        }
+
+        make_result = envoyer_vers_make(payload)
+        return JSONResponse({
+            "status": "success",
+            "make_webhook": MAKE_WEBHOOK_URL,
+            "make_result": make_result,
+            "payload_envoye": payload,
+        })
+
     port = int(os.environ.get("PORT", 8000))
     print(f"🚀 Webhook Webdesign & Co démarré sur http://0.0.0.0:{port}")
     print(f"📖 Documentation : http://0.0.0.0:{port}/docs")
     print(f"🔐 Secret actif  : {WEBHOOK_SECRET}")
+    print(f"📡 Make.com URL  : {MAKE_WEBHOOK_URL}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
