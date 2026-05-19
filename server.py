@@ -6,6 +6,20 @@ import random
 import sys
 import urllib.request
 
+def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
+    """Génère une URL d'image publique JPEG via Picsum Photos (seed déterministe par sujet)."""
+    seed = (
+        sujet.lower()
+        .replace("é", "e").replace("è", "e").replace("ê", "e")
+        .replace("à", "a").replace("â", "a").replace("ô", "o")
+        .replace("û", "u").replace("ç", "c").replace("'", "")
+        .replace(" ", "-").replace("&", "and").replace("/", "-")
+    )[:40]
+    dimensions = {"instagram": "1080/1080", "tiktok": "1080/1920", "linkedin": "1200/628"}
+    dim = dimensions.get(reseau, "1200/628")
+    return f"https://picsum.photos/seed/{seed}/{dim}"
+
+
 MAKE_WEBHOOK_URL = os.environ.get(
     "MAKE_WEBHOOK_URL",
     "https://hook.eu1.make.com/5uob38x8gtk2tsgdsqvslh3tdjg58yw5"
@@ -476,12 +490,6 @@ def run_webhook_server():
 
     @app.post("/webhook/generer-contenu")
     async def webhook_generer_contenu(request: Request):
-        """
-        Génère un post complet pour un réseau social.
-        Body JSON : { "sujet": "...", "reseau": "tiktok|linkedin|instagram",
-                      "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
@@ -497,12 +505,6 @@ def run_webhook_server():
 
     @app.post("/webhook/publier-tous-reseaux")
     async def webhook_publier_tous_reseaux(request: Request):
-        """
-        Génère le contenu pour TikTok, LinkedIn et Instagram en une seule requête.
-        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique",
-                      "image_url": "https://...", "date_publication": "2025-01-15T10:00:00" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
@@ -516,22 +518,22 @@ def run_webhook_server():
             "status": "success",
             "sujet": sujet,
             "marche": marche,
-            "image_url": image_url,
+            "image_url": image_url or generer_image_url(sujet, "instagram"),
             "date_publication": date_publication,
             "publications": {
                 "tiktok": {
                     "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
-                    "image_url": image_url,
+                    "image_url": image_url or generer_image_url(sujet, "tiktok"),
                     "date_publication": date_publication,
                 },
                 "linkedin": {
                     "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
-                    "image_url": image_url,
+                    "image_url": image_url or generer_image_url(sujet, "linkedin"),
                     "date_publication": date_publication,
                 },
                 "instagram": {
                     "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
-                    "image_url": image_url,
+                    "image_url": image_url or generer_image_url(sujet, "instagram"),
                     "date_publication": date_publication,
                 },
             },
@@ -544,11 +546,6 @@ def run_webhook_server():
 
     @app.post("/webhook/analyser-tendances")
     async def webhook_analyser_tendances(request: Request):
-        """
-        Retourne les tendances virales pour un marché.
-        Body JSON : { "marche": "france|dubai", "nb_tendances": 5 }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         return JSONResponse({
@@ -561,11 +558,6 @@ def run_webhook_server():
 
     @app.post("/webhook/planifier-calendrier")
     async def webhook_planifier_calendrier(request: Request):
-        """
-        Génère un calendrier éditorial hebdomadaire.
-        Body JSON : { "marche": "france|dubai", "semaine_debut": "JJ/MM/AAAA" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         return JSONResponse({
@@ -578,12 +570,6 @@ def run_webhook_server():
 
     @app.post("/webhook/generer-legende")
     async def webhook_generer_legende(request: Request):
-        """
-        Génère une légende prête à copier-coller.
-        Body JSON : { "sujet": "...", "reseau": "tiktok|linkedin|instagram",
-                      "marche": "france|dubai", "objectif": "engagement|vente|notoriete" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
@@ -601,12 +587,6 @@ def run_webhook_server():
 
     @app.post("/webhook/envoyer-vers-make")
     async def webhook_envoyer_vers_make(request: Request):
-        """
-        Génère le contenu pour TikTok, LinkedIn et Instagram, puis l'envoie
-        automatiquement vers le webhook Make.com configuré.
-        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
