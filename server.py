@@ -519,9 +519,21 @@ def run_webhook_server():
             "image_url": image_url,
             "date_publication": date_publication,
             "publications": {
-                "tiktok": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
-                "linkedin": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
-                "instagram": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+                "tiktok": {
+                    "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
+                    "image_url": image_url,
+                    "date_publication": date_publication,
+                },
+                "linkedin": {
+                    "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
+                    "image_url": image_url,
+                    "date_publication": date_publication,
+                },
+                "instagram": {
+                    "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+                    "image_url": image_url,
+                    "date_publication": date_publication,
+                },
             },
             "hashtags": {
                 "tiktok": suggerer_hashtags(sujet=sujet, reseau="tiktok", marche=marche, nb_hashtags=8),
