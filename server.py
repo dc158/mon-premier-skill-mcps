@@ -628,14 +628,24 @@ def run_webhook_server():
             raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
         marche = data.get("marche", "france")
         ton = data.get("ton", "professionnel")
+        image_url_fournie = data.get("image_url", "")
 
         payload = {
             "sujet": sujet,
             "marche": marche,
             "publications": {
-                "tiktok": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
-                "linkedin": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
-                "instagram": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+                "tiktok": {
+                    "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
+                    "image_url": image_url_fournie or generer_image_url(sujet, "tiktok"),
+                },
+                "linkedin": {
+                    "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
+                    "image_url": image_url_fournie or generer_image_url(sujet, "linkedin"),
+                },
+                "instagram": {
+                    "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+                    "image_url": image_url_fournie or generer_image_url(sujet, "instagram"),
+                },
             },
             "hashtags": {
                 "tiktok": suggerer_hashtags(sujet=sujet, reseau="tiktok", marche=marche, nb_hashtags=8),
