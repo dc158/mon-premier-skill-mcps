@@ -6,6 +6,20 @@ import random
 import sys
 import urllib.request
 
+def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
+    """Génère une URL d'image publique JPEG via Picsum Photos (seed déterministe par sujet)."""
+    seed = (
+        sujet.lower()
+        .replace("é", "e").replace("è", "e").replace("ê", "e")
+        .replace("à", "a").replace("â", "a").replace("ô", "o")
+        .replace("û", "u").replace("ç", "c").replace("'", "")
+        .replace(" ", "-").replace("&", "and").replace("/", "-")
+    )[:40]
+    dimensions = {"instagram": "1080/1080", "tiktok": "1080/1920", "linkedin": "1200/628"}
+    dim = dimensions.get(reseau, "1200/628")
+    return f"https://picsum.photos/seed/{seed}/{dim}"
+
+
 MAKE_WEBHOOK_URL = os.environ.get(
     "MAKE_WEBHOOK_URL",
     "https://hook.eu1.make.com/5uob38x8gtk2tsgdsqvslh3tdjg58yw5"
@@ -516,22 +530,22 @@ def run_webhook_server():
             "status": "success",
             "sujet": sujet,
             "marche": marche,
-            "image_url": image_url,
+            "image_url": image_url or generer_image_url(sujet, "instagram"),
             "date_publication": date_publication,
             "publications": {
                 "tiktok": {
                     "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
-                    "image_url": image_url,
+                    "image_url": image_url or generer_image_url(sujet, "tiktok"),
                     "date_publication": date_publication,
                 },
                 "linkedin": {
                     "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
-                    "image_url": image_url,
+                    "image_url": image_url or generer_image_url(sujet, "linkedin"),
                     "date_publication": date_publication,
                 },
                 "instagram": {
                     "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
-                    "image_url": image_url,
+                    "image_url": image_url or generer_image_url(sujet, "instagram"),
                     "date_publication": date_publication,
                 },
             },
