@@ -466,6 +466,105 @@ def generer_legende(
     return legende
 
 
+SUJETS_AUTO = {
+    "france": [
+        "identité visuelle pour PME",
+        "site web mobile-first en 2025",
+        "personal branding pour dirigeants",
+        "SEO local pour commerces français",
+        "IA et automatisation pour PME",
+    ],
+    "dubai": [
+        "luxury branding et prestige digital",
+        "e-commerce au Moyen-Orient",
+        "personal branding pour entrepreneurs francophones",
+        "identité visuelle bilingue FR-EN",
+        "IA et startups tech à Dubai",
+    ],
+}
+
+
+def publier_automatiquement(marche: str, reseau: str):
+    """Appelé par le scheduler : choisit un sujet et envoie vers Make.com."""
+    sujets = SUJETS_AUTO.get(marche, SUJETS_AUTO["france"])
+    sujet = sujets[datetime.now().weekday() % len(sujets)]
+    payload = {
+        "sujet": sujet,
+        "marche": marche,
+        "reseau_principal": reseau,
+        "publications": {
+            "tiktok": {
+                "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche),
+                "image_url": generer_image_url(sujet, "tiktok"),
+            },
+            "linkedin": {
+                "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche),
+                "image_url": generer_image_url(sujet, "linkedin"),
+            },
+            "instagram": {
+                "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche),
+                "image_url": generer_image_url(sujet, "instagram"),
+            },
+        },
+        "hashtags": {
+            "tiktok": suggerer_hashtags(sujet=sujet, reseau="tiktok", marche=marche, nb_hashtags=8),
+            "linkedin": suggerer_hashtags(sujet=sujet, reseau="linkedin", marche=marche, nb_hashtags=5),
+            "instagram": suggerer_hashtags(sujet=sujet, reseau="instagram", marche=marche, nb_hashtags=15),
+        },
+        "declencheur": "scheduler_automatique",
+        "timestamp": datetime.now().isoformat(),
+    }
+    result = envoyer_vers_make(payload)
+    print(f"[SCHEDULER] {marche.upper()} {reseau.upper()} — {sujet} → {result.get('status')}")
+
+
+def demarrer_scheduler():
+    """Configure et démarre le scheduler APScheduler avec les horaires optimaux par marché."""
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+
+    scheduler = BackgroundScheduler(timezone="UTC")
+
+    # France (UTC+2 été / UTC+1 hiver — on utilise UTC)
+    horaires_france = {
+        "tiktok":    [("05", "00"), ("10", "00"), ("17", "00"), ("19", "00")],
+        "linkedin":  [("06", "00"), ("10", "30"), ("15", "30")],
+        "instagram": [("06", "00"), ("11", "00"), ("16", "00"), ("19", "00")],
+    }
+    # Dubai (UTC+4)
+    horaires_dubai = {
+        "tiktok":    [("04", "00"), ("09", "00"), ("16", "00"), ("18", "00")],
+        "linkedin":  [("05", "00"), ("09", "00"), ("14", "00")],
+        "instagram": [("05", "00"), ("09", "00"), ("15", "00"), ("17", "30")],
+    }
+
+    for reseau, slots in horaires_france.items():
+        for heure, minute in slots:
+            scheduler.add_job(
+                publier_automatiquement,
+                CronTrigger(hour=int(heure), minute=int(minute)),
+                args=["france", reseau],
+                id=f"france_{reseau}_{heure}{minute}",
+                replace_existing=True,
+            )
+
+    for reseau, slots in horaires_dubai.items():
+        for heure, minute in slots:
+            scheduler.add_job(
+                publier_automatiquement,
+                CronTrigger(hour=int(heure), minute=int(minute)),
+                args=["dubai", reseau],
+                id=f"dubai_{reseau}_{heure}{minute}",
+                replace_existing=True,
+            )
+
+    scheduler.start()
+    total = len(horaires_france["tiktok"]) + len(horaires_france["linkedin"]) + len(horaires_france["instagram"]) + \
+            len(horaires_dubai["tiktok"]) + len(horaires_dubai["linkedin"]) + len(horaires_dubai["instagram"])
+    print(f"⏰ Scheduler démarré — {total} publications automatiques/jour (France + Dubai)")
+    return scheduler
+
+
 def run_webhook_server():
     """Serveur HTTP pour Make.com — lance avec : python server.py --webhook"""
     from fastapi import FastAPI, Request, HTTPException, Header
@@ -484,9 +583,37 @@ def run_webhook_server():
         if x_webhook_secret != WEBHOOK_SECRET:
             raise HTTPException(status_code=401, detail="Secret invalide.")
 
+    scheduler = demarrer_scheduler()
+
     @app.get("/health")
     async def health():
-        return {"status": "ok", "service": "Webdesign & Co Webhook"}
+        return {"status": "ok", "service": "Webdesign & Co Webhook", "scheduler": "running"}
+
+    @app.get("/scheduler/status")
+    async def scheduler_status():
+        jobs = [
+            {
+                "id": job.id,
+                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
+            }
+            for job in scheduler.get_jobs()
+        ]
+        return JSONResponse({
+            "scheduler": "running",
+            "total_jobs": len(jobs),
+            "make_webhook": MAKE_WEBHOOK_URL,
+            "jobs": jobs,
+        })
+
+    @app.post("/scheduler/publier-maintenant")
+    async def scheduler_publier_maintenant(request: Request):
+        """Déclenche immédiatement une publication vers Make.com sans attendre le scheduler."""
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        marche = data.get("marche", "france")
+        reseau = data.get("reseau", "instagram")
+        publier_automatiquement(marche, reseau)
+        return JSONResponse({"status": "déclenché", "marche": marche, "reseau": reseau})
 
     @app.post("/webhook/generer-contenu")
     async def webhook_generer_contenu(request: Request):
