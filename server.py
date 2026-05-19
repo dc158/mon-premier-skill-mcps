@@ -120,29 +120,54 @@ JOURS_SEMAINE = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "D
 
 @mcp.tool()
 def analyser_tendances(marche: str = "france", nb_tendances: int = 5) -> str:
+    """
+    Détecte les tendances virales actuelles pour Webdesign & Co sur un marché donné.
+    Marché : 'france' ou 'dubai'. nb_tendances : nombre de tendances à retourner (1-7).
+    """
     marche = marche.lower()
     if marche not in MARCHES:
         return json.dumps({"erreur": "Marché inconnu. Utilisez 'france' ou 'dubai'."}, ensure_ascii=False)
+
     nb = max(1, min(nb_tendances, 7))
     tendances = TENDANCES_BASE[marche][:nb]
     drapeau = MARCHES[marche]["emoji_drapeau"]
+
     lignes = [f"📊 TENDANCES VIRALES — Webdesign & Co {drapeau} {marche.upper()}\n"]
     for i, t in enumerate(tendances, 1):
         barre = "█" * (t["score"] // 10) + "░" * (10 - t["score"] // 10)
-        lignes.append(f"#{i} {t['sujet']}\n   Score viral : {barre} {t['score']}/100\n   Hashtag clé : {t['hashtag_cle']}\n")
+        lignes.append(
+            f"#{i} {t['sujet']}\n"
+            f"   Score viral : {barre} {t['score']}/100\n"
+            f"   Hashtag clé : {t['hashtag_cle']}\n"
+        )
+
     lignes.append("💡 Conseil : Surfez sur la tendance #1 cette semaine pour maximiser votre portée.")
     return "\n".join(lignes)
 
 
 @mcp.tool()
-def generer_contenu(sujet: str, reseau: str, marche: str = "france", ton: str = "professionnel") -> str:
+def generer_contenu(
+    sujet: str,
+    reseau: str,
+    marche: str = "france",
+    ton: str = "professionnel"
+) -> str:
+    """
+    Crée un post complet prêt à publier pour Webdesign & Co.
+    reseau : 'tiktok', 'linkedin' ou 'instagram'.
+    marche : 'france' ou 'dubai'.
+    ton : 'professionnel', 'inspirant' ou 'humoristique'.
+    """
     reseau = reseau.lower()
     marche = marche.lower()
+
     if reseau not in ["tiktok", "linkedin", "instagram"]:
         return json.dumps({"erreur": "Réseau inconnu. Utilisez 'tiktok', 'linkedin' ou 'instagram'."}, ensure_ascii=False)
     if marche not in MARCHES:
         return json.dumps({"erreur": "Marché inconnu. Utilisez 'france' ou 'dubai'."}, ensure_ascii=False)
+
     drapeau = MARCHES[marche]["emoji_drapeau"]
+
     hooks = {
         "professionnel": [
             f"Votre entreprise mérite le meilleur design. Voici pourquoi ▼",
@@ -160,11 +185,14 @@ def generer_contenu(sujet: str, reseau: str, marche: str = "france", ton: str = 
             f"Si {sujet} était un plat, ce serait… un plat raté sans nous 🍽️😂",
         ],
     }
+
     hook = random.choice(hooks.get(ton, hooks["professionnel"]))
     hashtags = " ".join(HASHTAGS_BASE[reseau][marche][:5])
+
     if reseau == "tiktok":
-        return (
-            f"🎬 SCRIPT TIKTOK — Webdesign & Co {drapeau}\n{'='*50}\n\n"
+        contenu = (
+            f"🎬 SCRIPT TIKTOK — Webdesign & Co {drapeau}\n"
+            f"{'='*50}\n\n"
             f"⏱️ DURÉE CONSEILLÉE : 30-45 secondes\n\n"
             f"🎯 ACCROCHE (0-3 sec) :\n« {hook} »\n\n"
             f"📖 DÉVELOPPEMENT (3-25 sec) :\n"
@@ -173,13 +201,18 @@ def generer_contenu(sujet: str, reseau: str, marche: str = "france", ton: str = 
             f"On ne fait pas que du design — on crée votre image de marque.\n\n"
             f"💡 CONSEIL CLÉ (25-40 sec) :\n"
             f"Pour réussir avec {sujet}, voici ce qu'il faut absolument faire :\n"
-            f"✅ Définir une identité visuelle forte\n✅ Être cohérent sur tous vos canaux\n✅ Mesurer vos résultats chaque semaine\n\n"
-            f"🔚 CALL TO ACTION (40-45 sec) :\n« Suivez-nous pour plus de conseils ! Lien en bio pour un audit gratuit. »\n\n"
+            f"✅ Définir une identité visuelle forte\n"
+            f"✅ Être cohérent sur tous vos canaux\n"
+            f"✅ Mesurer vos résultats chaque semaine\n\n"
+            f"🔚 CALL TO ACTION (40-45 sec) :\n"
+            f"« Suivez-nous pour plus de conseils ! Lien en bio pour un audit gratuit. »\n\n"
             f"#️⃣ HASHTAGS :\n{hashtags} #WebdesignAndCo\n"
         )
+
     elif reseau == "linkedin":
-        return (
-            f"💼 POST LINKEDIN — Webdesign & Co {drapeau}\n{'='*50}\n\n"
+        contenu = (
+            f"💼 POST LINKEDIN — Webdesign & Co {drapeau}\n"
+            f"{'='*50}\n\n"
             f"📌 ACCROCHE :\n{hook}\n\n"
             f"📝 CORPS DU POST :\n"
             f"En tant que dirigeant de PME en {marche.capitalize()}, vous savez que {sujet} est devenu incontournable.\n\n"
@@ -188,30 +221,52 @@ def generer_contenu(sujet: str, reseau: str, marche: str = "france", ton: str = 
             f"→ 78% des PME perdent des clients à cause d'un manque de présence en ligne\n"
             f"→ Un design professionnel augmente la confiance client de 60%\n"
             f"→ {sujet} est le levier n°1 de croissance digitale en 2025\n\n"
-            f"Notre approche chez Webdesign & Co :\n✦ Audit de votre présence digitale\n✦ Stratégie sur mesure pour votre marché\n✦ Création & déploiement de votre identité visuelle\n✦ Suivi & optimisation en continu\n\n"
-            f"🎯 Vous souhaitez développer votre activité grâce à {sujet} ?\nContactez-nous pour un audit offert → lien en commentaire.\n\n"
+            f"Notre approche chez Webdesign & Co :\n"
+            f"✦ Audit de votre présence digitale\n"
+            f"✦ Stratégie sur mesure pour votre marché\n"
+            f"✦ Création & déploiement de votre identité visuelle\n"
+            f"✦ Suivi & optimisation en continu\n\n"
+            f"🎯 Vous souhaitez développer votre activité grâce à {sujet} ?\n"
+            f"Contactez-nous pour un audit offert → lien en commentaire.\n\n"
             f"♻️ Partagez si cela peut aider un entrepreneur de votre réseau !\n\n"
             f"#️⃣ HASHTAGS :\n{hashtags} #WebdesignAndCo\n"
         )
+
     else:
-        return (
-            f"📸 POST INSTAGRAM — Webdesign & Co {drapeau}\n{'='*50}\n\n"
+        contenu = (
+            f"📸 POST INSTAGRAM — Webdesign & Co {drapeau}\n"
+            f"{'='*50}\n\n"
             f"🖼️ VISUEL CONSEILLÉ : Mockup design / Avant-Après / Chiffres clés\n\n"
-            f"✍️ LÉGENDE :\n{hook}\n\n"
+            f"✍️ LÉGENDE :\n"
+            f"{hook}\n\n"
             f"✨ {sujet} : le secret des PME qui cartonnent en {marche.capitalize()} {drapeau}\n\n"
             f"Chez Webdesign & Co, on transforme votre vision en identité visuelle percutante.\n"
             f"Parce qu'un beau design, c'est bien — un design qui convertit, c'est mieux. 💪\n\n"
-            f"Ce qu'on vous offre :\n🎨 Design sur mesure\n📱 Stratégie réseaux sociaux\n🚀 Visibilité & croissance garanties\n\n"
+            f"Ce qu'on vous offre :\n"
+            f"🎨 Design sur mesure\n"
+            f"📱 Stratégie réseaux sociaux\n"
+            f"🚀 Visibilité & croissance garanties\n\n"
             f"👇 Commentez 'AUDIT' pour recevoir votre diagnostic gratuit !\n\n"
             f"#️⃣ HASHTAGS :\n{hashtags} #WebdesignAndCo\n"
         )
 
+    return contenu
+
 
 @mcp.tool()
-def planifier_calendrier(marche: str = "france", semaine_debut: str = "") -> str:
+def planifier_calendrier(
+    marche: str = "france",
+    semaine_debut: str = ""
+) -> str:
+    """
+    Génère un calendrier éditorial hebdomadaire complet pour Webdesign & Co.
+    marche : 'france' ou 'dubai'.
+    semaine_debut : date de début au format JJ/MM/AAAA (optionnel, défaut = lundi prochain).
+    """
     marche = marche.lower()
     if marche not in MARCHES:
         return json.dumps({"erreur": "Marché inconnu. Utilisez 'france' ou 'dubai'."}, ensure_ascii=False)
+
     if semaine_debut:
         try:
             debut = datetime.strptime(semaine_debut, "%d/%m/%Y")
@@ -221,29 +276,43 @@ def planifier_calendrier(marche: str = "france", semaine_debut: str = "") -> str
         aujourd_hui = datetime.now()
         jours_jusqu_lundi = (7 - aujourd_hui.weekday()) % 7 or 7
         debut = aujourd_hui + timedelta(days=jours_jusqu_lundi)
+
     drapeau = MARCHES[marche]["emoji_drapeau"]
     horaires = MARCHES[marche]["horaires"]
+
     planning = {
-        0: [("linkedin", horaires["linkedin"][0], "Conseil expert / Insight marché"), ("instagram", horaires["instagram"][2], "Inspiration / Moodboard design")],
-        1: [("tiktok", horaires["tiktok"][1], "Tuto rapide / Tip du jour"), ("instagram", horaires["instagram"][0], "Témoignage client / Avant-Après")],
-        2: [("linkedin", horaires["linkedin"][1], "Étude de cas / Résultats clients"), ("tiktok", horaires["tiktok"][2], "Tendance virale / POV agence web")],
-        3: [("instagram", horaires["instagram"][1], "Coulisses de l'agence / BTS"), ("linkedin", horaires["linkedin"][2], "Question / Sondage engagement")],
-        4: [("tiktok", horaires["tiktok"][0], "Top 3 conseils de la semaine"), ("instagram", horaires["instagram"][3], "Post récapitulatif / Best of")],
-        5: [("instagram", horaires["instagram"][2], "Contenu inspirant / Citation"), ("tiktok", horaires["tiktok"][3], "Récap tendances / À venir la semaine prochaine")],
+        0: [("linkedin", horaires["linkedin"][0], "Conseil expert / Insight marché"),
+            ("instagram", horaires["instagram"][2], "Inspiration / Moodboard design")],
+        1: [("tiktok", horaires["tiktok"][1], "Tuto rapide / Tip du jour"),
+            ("instagram", horaires["instagram"][0], "Témoignage client / Avant-Après")],
+        2: [("linkedin", horaires["linkedin"][1], "Étude de cas / Résultats clients"),
+            ("tiktok", horaires["tiktok"][2], "Tendance virale / POV agence web")],
+        3: [("instagram", horaires["instagram"][1], "Coulisses de l'agence / BTS"),
+            ("linkedin", horaires["linkedin"][2], "Question / Sondage engagement")],
+        4: [("tiktok", horaires["tiktok"][0], "Top 3 conseils de la semaine"),
+            ("instagram", horaires["instagram"][3], "Post récapitulatif / Best of")],
+        5: [("instagram", horaires["instagram"][2], "Contenu inspirant / Citation"),
+            ("tiktok", horaires["tiktok"][3], "Récap tendances / À venir la semaine prochaine")],
         6: [("linkedin", horaires["linkedin"][0], "Réflexion du dimanche / Vision 2025")],
     }
-    icones = {"tiktok": "🎬", "linkedin": "💼", "instagram": "📸"}
+
     lignes = [
         f"📅 CALENDRIER ÉDITORIAL — Webdesign & Co {drapeau} {marche.upper()}",
         f"Semaine du {debut.strftime('%d/%m/%Y')} au {(debut + timedelta(days=6)).strftime('%d/%m/%Y')}",
-        "=" * 55, ""
+        "=" * 55,
+        ""
     ]
+
+    icones = {"tiktok": "🎬", "linkedin": "💼", "instagram": "📸"}
+
     for i in range(7):
         date_jour = debut + timedelta(days=i)
+        posts = planning[i]
         lignes.append(f"📆 {JOURS_SEMAINE[i].upper()} {date_jour.strftime('%d/%m')}")
-        for reseau, heure, theme in planning[i]:
+        for reseau, heure, theme in posts:
             lignes.append(f"   {icones[reseau]} {reseau.upper()} — {heure} → {theme}")
         lignes.append("")
+
     lignes += [
         "=" * 55,
         f"📊 RÉCAP HEBDOMADAIRE : {drapeau} {marche.capitalize()}",
@@ -251,60 +320,101 @@ def planifier_calendrier(marche: str = "france", semaine_debut: str = "") -> str
         f"   💼 LinkedIn : {sum(1 for posts in planning.values() for r, _, _ in posts if r == 'linkedin')} posts",
         f"   📸 Instagram: {sum(1 for posts in planning.values() for r, _, _ in posts if r == 'instagram')} posts",
         f"   📌 TOTAL    : {sum(len(p) for p in planning.values())} publications",
-        "", "💡 Conseil : Préparez tous vos visuels le dimanche précédent pour une semaine sans stress !",
+        "",
+        "💡 Conseil : Préparez tous vos visuels le dimanche précédent pour une semaine sans stress !",
     ]
+
     return "\n".join(lignes)
 
 
 @mcp.tool()
-def suggerer_hashtags(sujet: str, reseau: str, marche: str = "france", nb_hashtags: int = 15) -> str:
+def suggerer_hashtags(
+    sujet: str,
+    reseau: str,
+    marche: str = "france",
+    nb_hashtags: int = 15
+) -> str:
+    """
+    Propose des hashtags optimisés pour Webdesign & Co selon le réseau et le marché.
+    reseau : 'tiktok', 'linkedin' ou 'instagram'.
+    marche : 'france' ou 'dubai'.
+    nb_hashtags : nombre de hashtags souhaités (5-20).
+    """
     reseau = reseau.lower()
     marche = marche.lower()
+
     if reseau not in ["tiktok", "linkedin", "instagram"]:
         return json.dumps({"erreur": "Réseau inconnu. Utilisez 'tiktok', 'linkedin' ou 'instagram'."}, ensure_ascii=False)
     if marche not in MARCHES:
         return json.dumps({"erreur": "Marché inconnu. Utilisez 'france' ou 'dubai'."}, ensure_ascii=False)
+
     nb = max(5, min(nb_hashtags, 20))
     drapeau = MARCHES[marche]["emoji_drapeau"]
+
     hashtag_sujet = "#" + sujet.replace(" ", "").replace("'", "").replace("é", "e").replace("è", "e").replace("ê", "e").replace("à", "a").capitalize()
+
     pool = HASHTAGS_BASE[reseau][marche].copy()
     pool.insert(0, hashtag_sujet)
     pool.append("#WebdesignAndCo")
+
     selection = pool[:nb]
+
     limites = {"tiktok": "5-10 hashtags", "linkedin": "3-5 hashtags", "instagram": "20-30 hashtags"}
     portees = {
         "tiktok": {"volume": "Fort (1M-50M vues)", "frequence": "3-4x par jour"},
         "linkedin": {"volume": "Moyen (10K-500K abonnés)", "frequence": "1x par jour"},
         "instagram": {"volume": "Mixte (niche + large)", "frequence": "1-2x par jour"},
     }
+
     lignes = [
         f"#️⃣ HASHTAGS — Webdesign & Co {drapeau} {marche.upper()} | {reseau.upper()}",
-        f"Sujet : {sujet}", "=" * 50, "",
-        f"✅ HASHTAGS RECOMMANDÉS ({nb}) :", " ".join(selection), "",
+        f"Sujet : {sujet}",
+        "=" * 50,
+        "",
+        f"✅ HASHTAGS RECOMMANDÉS ({nb}) :",
+        " ".join(selection),
+        "",
         f"📊 INFOS RÉSEAU :",
         f"   Limite conseillée : {limites[reseau]}",
         f"   Volume d'audience : {portees[reseau]['volume']}",
         f"   Fréquence optimale : {portees[reseau]['frequence']}",
-        "", f"💡 Stratégie {reseau.upper()} {drapeau} :",
+        "",
+        f"💡 Stratégie {reseau.upper()} {drapeau} :",
     ]
+
     if reseau == "tiktok":
         lignes.append("   Mélangez 2 hashtags larges + 2 hashtags niche + #WebdesignAndCo pour maximiser la portée.")
     elif reseau == "linkedin":
         lignes.append("   Privilégiez 3-5 hashtags ultra-ciblés B2B. Évitez les hashtags trop génériques.")
     else:
         lignes.append("   Alternez hashtags populaires (>500K) + niche (<50K) + marque #WebdesignAndCo.")
+
     return "\n".join(lignes)
 
 
 @mcp.tool()
-def generer_legende(sujet: str, reseau: str, marche: str = "france", objectif: str = "engagement") -> str:
+def generer_legende(
+    sujet: str,
+    reseau: str,
+    marche: str = "france",
+    objectif: str = "engagement"
+) -> str:
+    """
+    Crée une légende complète prête à copier-coller pour Webdesign & Co.
+    reseau : 'tiktok', 'linkedin' ou 'instagram'.
+    marche : 'france' ou 'dubai'.
+    objectif : 'engagement', 'vente' ou 'notoriete'.
+    """
     reseau = reseau.lower()
     marche = marche.lower()
+
     if reseau not in ["tiktok", "linkedin", "instagram"]:
         return json.dumps({"erreur": "Réseau inconnu. Utilisez 'tiktok', 'linkedin' ou 'instagram'."}, ensure_ascii=False)
     if marche not in MARCHES:
         return json.dumps({"erreur": "Marché inconnu. Utilisez 'france' ou 'dubai'."}, ensure_ascii=False)
+
     drapeau = MARCHES[marche]["emoji_drapeau"]
+
     ctas = {
         "engagement": {
             "tiktok": "💬 Et toi, c'est quoi ta plus grande galère avec ça ? Dis-le en commentaire !",
@@ -322,23 +432,137 @@ def generer_legende(sujet: str, reseau: str, marche: str = "france", objectif: s
             "instagram": "📌 Épinglez ce post pour y revenir plus tard. Sauvegardez-le — il vous servira ! 🔖",
         },
     }
+
     if objectif not in ctas:
         objectif = "engagement"
+
     cta = ctas[objectif][reseau]
     hashtags = " ".join(HASHTAGS_BASE[reseau][marche][:8]) + " #WebdesignAndCo"
-    emoji = {"tiktok": "🎬", "linkedin": "💼", "instagram": "✨"}[reseau]
-    return (
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📋 LÉGENDE PRÊTE À PUBLIER\n"
+
+    emojis_intro = {"tiktok": "🎬", "linkedin": "💼", "instagram": "✨"}
+    emoji = emojis_intro[reseau]
+
+    legende = (
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📋 LÉGENDE PRÊTE À PUBLIER\n"
         f"Webdesign & Co {drapeau} | {reseau.upper()} | Objectif : {objectif.upper()}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{emoji} {sujet.upper()} : ce que vous devez savoir en {marche.capitalize()} {drapeau}\n\n"
-        f"Vous dirigez une PME et vous voulez vous démarquer en ligne ?\nWebdesign & Co est là pour vous. 🚀\n\n"
+        f"Vous dirigez une PME et vous voulez vous démarquer en ligne ?\n"
+        f"Webdesign & Co est là pour vous. 🚀\n\n"
         f"On accompagne les entrepreneurs francophones {drapeau} depuis des années :\n"
-        f"🎨 Identité visuelle sur mesure\n💻 Sites web qui convertissent\n📱 Stratégie réseaux sociaux\n📈 Croissance digitale garantie\n\n"
-        f"{sujet} n'est plus une option — c'est une nécessité en 2025.\n\n{cta}\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n{hashtags}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"🎨 Identité visuelle sur mesure\n"
+        f"💻 Sites web qui convertissent\n"
+        f"📱 Stratégie réseaux sociaux\n"
+        f"📈 Croissance digitale garantie\n\n"
+        f"{sujet} n'est plus une option — c'est une nécessité en 2025.\n\n"
+        f"{cta}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{hashtags}\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"✅ COPIER-COLLER DIRECTEMENT — Aucune modification nécessaire."
     )
+
+    return legende
+
+
+SUJETS_AUTO = {
+    "france": [
+        "identité visuelle pour PME",
+        "site web mobile-first en 2025",
+        "personal branding pour dirigeants",
+        "SEO local pour commerces français",
+        "IA et automatisation pour PME",
+    ],
+    "dubai": [
+        "luxury branding et prestige digital",
+        "e-commerce au Moyen-Orient",
+        "personal branding pour entrepreneurs francophones",
+        "identité visuelle bilingue FR-EN",
+        "IA et startups tech à Dubai",
+    ],
+}
+
+
+def publier_automatiquement(marche: str, reseau: str):
+    """Appelé par le scheduler : choisit un sujet et envoie vers Make.com."""
+    sujets = SUJETS_AUTO.get(marche, SUJETS_AUTO["france"])
+    sujet = sujets[datetime.now().weekday() % len(sujets)]
+    payload = {
+        "sujet": sujet,
+        "marche": marche,
+        "reseau_principal": reseau,
+        "publications": {
+            "tiktok": {
+                "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche),
+                "image_url": generer_image_url(sujet, "tiktok"),
+            },
+            "linkedin": {
+                "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche),
+                "image_url": generer_image_url(sujet, "linkedin"),
+            },
+            "instagram": {
+                "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche),
+                "image_url": generer_image_url(sujet, "instagram"),
+            },
+        },
+        "hashtags": {
+            "tiktok": suggerer_hashtags(sujet=sujet, reseau="tiktok", marche=marche, nb_hashtags=8),
+            "linkedin": suggerer_hashtags(sujet=sujet, reseau="linkedin", marche=marche, nb_hashtags=5),
+            "instagram": suggerer_hashtags(sujet=sujet, reseau="instagram", marche=marche, nb_hashtags=15),
+        },
+        "declencheur": "scheduler_automatique",
+        "timestamp": datetime.now().isoformat(),
+    }
+    result = envoyer_vers_make(payload)
+    print(f"[SCHEDULER] {marche.upper()} {reseau.upper()} — {sujet} → {result.get('status')}")
+
+
+def demarrer_scheduler():
+    """Configure et démarre le scheduler APScheduler avec les horaires optimaux par marché."""
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+
+    scheduler = BackgroundScheduler(timezone="UTC")
+
+    # France (UTC+2 été / UTC+1 hiver — on utilise UTC)
+    horaires_france = {
+        "tiktok":    [("05", "00"), ("10", "00"), ("17", "00"), ("19", "00")],
+        "linkedin":  [("06", "00"), ("10", "30"), ("15", "30")],
+        "instagram": [("06", "00"), ("11", "00"), ("16", "00"), ("19", "00")],
+    }
+    # Dubai (UTC+4)
+    horaires_dubai = {
+        "tiktok":    [("04", "00"), ("09", "00"), ("16", "00"), ("18", "00")],
+        "linkedin":  [("05", "00"), ("09", "00"), ("14", "00")],
+        "instagram": [("05", "00"), ("09", "00"), ("15", "00"), ("17", "30")],
+    }
+
+    for reseau, slots in horaires_france.items():
+        for heure, minute in slots:
+            scheduler.add_job(
+                publier_automatiquement,
+                CronTrigger(hour=int(heure), minute=int(minute)),
+                args=["france", reseau],
+                id=f"france_{reseau}_{heure}{minute}",
+                replace_existing=True,
+            )
+
+    for reseau, slots in horaires_dubai.items():
+        for heure, minute in slots:
+            scheduler.add_job(
+                publier_automatiquement,
+                CronTrigger(hour=int(heure), minute=int(minute)),
+                args=["dubai", reseau],
+                id=f"dubai_{reseau}_{heure}{minute}",
+                replace_existing=True,
+            )
+
+    scheduler.start()
+    total = len(horaires_france["tiktok"]) + len(horaires_france["linkedin"]) + len(horaires_france["instagram"]) + \
+            len(horaires_dubai["tiktok"]) + len(horaires_dubai["linkedin"]) + len(horaires_dubai["instagram"])
+    print(f"⏰ Scheduler démarré — {total} publications automatiques/jour (France + Dubai)")
+    return scheduler
 
 
 def run_webhook_server():
@@ -348,30 +572,78 @@ def run_webhook_server():
     import uvicorn
 
     WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "webdesign-co-secret")
-    app = FastAPI(title="Webdesign & Co — Webhook Make.com", version="1.0.0")
+
+    app = FastAPI(
+        title="Webdesign & Co — Webhook Make.com",
+        description="API webhook pour publier automatiquement sur TikTok, LinkedIn et Instagram",
+        version="1.0.0",
+    )
 
     def verifier_secret(x_webhook_secret: str = Header(default="")):
         if x_webhook_secret != WEBHOOK_SECRET:
             raise HTTPException(status_code=401, detail="Secret invalide.")
 
+    scheduler = demarrer_scheduler()
+
     @app.get("/health")
     async def health():
-        return {"status": "ok", "service": "Webdesign & Co Webhook"}
+        return {"status": "ok", "service": "Webdesign & Co Webhook", "scheduler": "running"}
+
+    @app.get("/scheduler/status")
+    async def scheduler_status():
+        jobs = [
+            {
+                "id": job.id,
+                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
+            }
+            for job in scheduler.get_jobs()
+        ]
+        return JSONResponse({
+            "scheduler": "running",
+            "total_jobs": len(jobs),
+            "make_webhook": MAKE_WEBHOOK_URL,
+            "jobs": jobs,
+        })
+
+    @app.post("/scheduler/publier-maintenant")
+    async def scheduler_publier_maintenant(request: Request):
+        """Déclenche immédiatement une publication vers Make.com sans attendre le scheduler."""
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        marche = data.get("marche", "france")
+        reseau = data.get("reseau", "instagram")
+        publier_automatiquement(marche, reseau)
+        return JSONResponse({"status": "déclenché", "marche": marche, "reseau": reseau})
 
     @app.post("/webhook/generer-contenu")
     async def webhook_generer_contenu(request: Request):
+        """
+        Génère un post complet pour un réseau social.
+        Body JSON : { "sujet": "...", "reseau": "tiktok|linkedin|instagram",
+                      "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
+        Header requis : X-Webhook-Secret
+        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
         if not sujet:
             raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
-        return JSONResponse({"status": "success", "contenu": generer_contenu(
-            sujet=sujet, reseau=data.get("reseau", "instagram"),
-            marche=data.get("marche", "france"), ton=data.get("ton", "professionnel"),
-        )})
+        contenu = generer_contenu(
+            sujet=sujet,
+            reseau=data.get("reseau", "instagram"),
+            marche=data.get("marche", "france"),
+            ton=data.get("ton", "professionnel"),
+        )
+        return JSONResponse({"status": "success", "reseau": data.get("reseau"), "marche": data.get("marche"), "contenu": contenu})
 
     @app.post("/webhook/publier-tous-reseaux")
     async def webhook_publier_tous_reseaux(request: Request):
+        """
+        Génère le contenu pour TikTok, LinkedIn et Instagram en une seule requête.
+        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique",
+                      "image_url": "https://...", "date_publication": "2025-01-15T10:00:00" }
+        Header requis : X-Webhook-Secret
+        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
@@ -413,36 +685,69 @@ def run_webhook_server():
 
     @app.post("/webhook/analyser-tendances")
     async def webhook_analyser_tendances(request: Request):
+        """
+        Retourne les tendances virales pour un marché.
+        Body JSON : { "marche": "france|dubai", "nb_tendances": 5 }
+        Header requis : X-Webhook-Secret
+        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
-        return JSONResponse({"status": "success", "tendances": analyser_tendances(
-            marche=data.get("marche", "france"),
-            nb_tendances=int(data.get("nb_tendances", 5)),
-        )})
+        return JSONResponse({
+            "status": "success",
+            "tendances": analyser_tendances(
+                marche=data.get("marche", "france"),
+                nb_tendances=int(data.get("nb_tendances", 5)),
+            ),
+        })
 
     @app.post("/webhook/planifier-calendrier")
     async def webhook_planifier_calendrier(request: Request):
+        """
+        Génère un calendrier éditorial hebdomadaire.
+        Body JSON : { "marche": "france|dubai", "semaine_debut": "JJ/MM/AAAA" }
+        Header requis : X-Webhook-Secret
+        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
-        return JSONResponse({"status": "success", "calendrier": planifier_calendrier(
-            marche=data.get("marche", "france"),
-            semaine_debut=data.get("semaine_debut", ""),
-        )})
+        return JSONResponse({
+            "status": "success",
+            "calendrier": planifier_calendrier(
+                marche=data.get("marche", "france"),
+                semaine_debut=data.get("semaine_debut", ""),
+            ),
+        })
 
     @app.post("/webhook/generer-legende")
     async def webhook_generer_legende(request: Request):
+        """
+        Génère une légende prête à copier-coller.
+        Body JSON : { "sujet": "...", "reseau": "tiktok|linkedin|instagram",
+                      "marche": "france|dubai", "objectif": "engagement|vente|notoriete" }
+        Header requis : X-Webhook-Secret
+        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
         if not sujet:
             raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
-        return JSONResponse({"status": "success", "legende": generer_legende(
-            sujet=sujet, reseau=data.get("reseau", "instagram"),
-            marche=data.get("marche", "france"), objectif=data.get("objectif", "engagement"),
-        )})
+        return JSONResponse({
+            "status": "success",
+            "legende": generer_legende(
+                sujet=sujet,
+                reseau=data.get("reseau", "instagram"),
+                marche=data.get("marche", "france"),
+                objectif=data.get("objectif", "engagement"),
+            ),
+        })
 
     @app.post("/webhook/envoyer-vers-make")
     async def webhook_envoyer_vers_make(request: Request):
+        """
+        Génère le contenu pour TikTok, LinkedIn et Instagram, puis l'envoie
+        automatiquement vers le webhook Make.com configuré.
+        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
+        Header requis : X-Webhook-Secret
+        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
