@@ -38,6 +38,13 @@ RENDER_URL = os.environ.get(
 )
 LOG_FILE = "/tmp/publications_log.json"
 
+# Google Sheets — variables d'environnement à configurer dans Render :
+#   GOOGLE_SERVICE_ACCOUNT_JSON : contenu JSON complet du service account
+#   GOOGLE_SHEET_ID             : ID de la Google Sheet (dans l'URL)
+GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID", "")
+SHEETS_WORKSHEET = "Publications"
+
 
 # ─────────────────────────────────────────────
 # 1. ROTATION MENSUELLE — 28 sujets uniques par marché
@@ -124,31 +131,97 @@ def choisir_ton() -> str:
 
 
 # ─────────────────────────────────────────────
-# 2. MÉMOIRE DES PUBLICATIONS — log JSON local
+# 2. MÉMOIRE DES PUBLICATIONS — Google Sheets (persistant) + /tmp/ (fallback)
 # ─────────────────────────────────────────────
 
 _publications_log: list = []
 
+
+def _get_sheets_worksheet():
+    """Retourne le worksheet gspread, ou None si non configuré."""
+    if not GOOGLE_SERVICE_ACCOUNT_JSON or not GOOGLE_SHEET_ID:
+        return None
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+        sa_info = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+        creds = Credentials.from_service_account_info(
+            sa_info,
+            scopes=["https://www.googleapis.com/auth/spreadsheets"],
+        )
+        gc = gspread.authorize(creds)
+        sh = gc.open_by_key(GOOGLE_SHEET_ID)
+        try:
+            return sh.worksheet(SHEETS_WORKSHEET)
+        except gspread.exceptions.WorksheetNotFound:
+            ws = sh.add_worksheet(title=SHEETS_WORKSHEET, rows=2000, cols=6)
+            ws.append_row(["timestamp", "sujet", "marche", "reseau", "ton", "source"])
+            return ws
+    except Exception as e:
+        print(f"[SHEETS] Connexion échouée : {e}")
+        return None
+
+
 def charger_log():
+    """Charge l'historique : Google Sheets en priorité, /tmp/ en fallback."""
     global _publications_log
+    ws = _get_sheets_worksheet()
+    if ws:
+        try:
+            rows = ws.get_all_records()
+            _publications_log = [
+                {
+                    "sujet": r.get("sujet", ""),
+                    "marche": r.get("marche", ""),
+                    "reseau": r.get("reseau", ""),
+                    "ton": r.get("ton", ""),
+                    "timestamp": r.get("timestamp", ""),
+                }
+                for r in rows if r.get("sujet")
+            ]
+            print(f"[LOG] {len(_publications_log)} entrées chargées depuis Google Sheets")
+            return
+        except Exception as e:
+            print(f"[SHEETS] Lecture échouée, fallback /tmp/ : {e}")
+    # Fallback /tmp/
     try:
         with open(LOG_FILE, "r", encoding="utf-8") as f:
             _publications_log = json.load(f)
+        print(f"[LOG] {len(_publications_log)} entrées chargées depuis /tmp/")
     except (FileNotFoundError, json.JSONDecodeError):
         _publications_log = []
 
-def sauvegarder_log():
-    with open(LOG_FILE, "w", encoding="utf-8") as f:
-        json.dump(_publications_log[-500:], f, ensure_ascii=False)
 
-def enregistrer_publication(sujet: str, marche: str, reseau: str):
-    _publications_log.append({
+def enregistrer_publication(sujet: str, marche: str, reseau: str, ton: str = "", source: str = ""):
+    """Enregistre dans Google Sheets (persistant) + /tmp/ (cache local)."""
+    entry = {
         "sujet": sujet,
         "marche": marche,
         "reseau": reseau,
+        "ton": ton,
+        "source": source,
         "timestamp": datetime.now().isoformat(),
-    })
-    sauvegarder_log()
+    }
+    _publications_log.append(entry)
+
+    # Persistance Google Sheets
+    ws = _get_sheets_worksheet()
+    if ws:
+        try:
+            ws.append_row([
+                entry["timestamp"], sujet, marche, reseau, ton, source
+            ])
+            print(f"[SHEETS] Enregistré : {sujet[:40]}")
+        except Exception as e:
+            print(f"[SHEETS] Écriture échouée : {e}")
+
+    # Cache /tmp/ (toujours écrit, sert de fallback)
+    try:
+        with open(LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(_publications_log[-500:], f, ensure_ascii=False)
+    except Exception:
+        pass
+
 
 def sujet_deja_publie_recemment(sujet: str, marche: str, jours: int = 14) -> bool:
     seuil = datetime.now() - timedelta(days=jours)
@@ -173,11 +246,43 @@ RSS_QUERIES = {
     "dubai": "web+design+digital+agency+Dubai+francophone",
 }
 
+# Mots-clés de pertinence secteur — un titre doit contenir au moins un de ces termes
+MOTS_CLES_SECTEUR = [
+    "webdesign", "web design", "agence web", "agence digitale",
+    "site web", "création site", "refonte site",
+    "identité visuelle", "logo", "charte graphique", "branding",
+    "pme", "entrepreneur", "startup",
+    "seo", "référencement", "google",
+    "marketing digital", "réseaux sociaux", "community manager",
+    "e-commerce", "boutique en ligne", "shopify",
+    "ux", "expérience utilisateur", "conversion",
+    "dubai", "émirats", "golfe", "moyen-orient",
+    "digital", "numérique", "transformation digitale",
+]
+
+
+def filtrer_titres_rss(titres: list) -> list:
+    """
+    Filtre les titres RSS bruts pour ne garder que ceux pertinents
+    au secteur webdesign/PME. Nettoie aussi le format "Titre - Source".
+    """
+    result = []
+    for titre in titres:
+        titre_lower = titre.lower()
+        if any(kw in titre_lower for kw in MOTS_CLES_SECTEUR):
+            # Google News format : "Titre de l'article - Nom du média"
+            sujet = titre.split(" - ")[0].strip()
+            # Ignorer les titres trop courts ou trop longs
+            if 15 <= len(sujet) <= 120:
+                result.append(sujet)
+    return result
+
+
 def scraper_tendances_rss(marche: str = "france") -> list:
-    """Scrappe Google News RSS pour détecter les tendances du secteur webdesign."""
+    """Scrappe Google News RSS et retourne uniquement les titres pertinents au secteur."""
     query = RSS_QUERIES.get(marche, RSS_QUERIES["france"])
     url = f"https://news.google.com/rss/search?q={query}&hl=fr&gl=FR&ceid=FR:fr"
-    titres = []
+    titres_bruts = []
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=15) as resp:
@@ -186,20 +291,23 @@ def scraper_tendances_rss(marche: str = "france") -> list:
         channel = root.find("channel")
         if channel is None:
             return []
-        for item in channel.findall("item")[:10]:
+        for item in channel.findall("item")[:20]:
             titre_el = item.find("title")
             if titre_el is not None and titre_el.text:
-                titres.append(titre_el.text.strip())
+                titres_bruts.append(titre_el.text.strip())
     except Exception as e:
         print(f"[VEILLE] RSS {marche} échoué : {e}")
-    return titres
+        return []
+    filtres = filtrer_titres_rss(titres_bruts)
+    print(f"[VEILLE] {marche.upper()} — {len(titres_bruts)} bruts → {len(filtres)} pertinents")
+    return filtres
+
 
 def rafraichir_veille():
     """Appelé chaque matin à 06h00 UTC pour mettre à jour les tendances."""
     for marche in ["france", "dubai"]:
         titres = scraper_tendances_rss(marche)
         TENDANCES_VEILLE[marche] = titres
-        print(f"[VEILLE] {marche.upper()} — {len(titres)} tendances récupérées")
 
 
 # ─────────────────────────────────────────────
@@ -760,7 +868,7 @@ def publier_automatiquement(marche: str, reseau: str):
 
     result = envoyer_vers_make(payload)
     if result.get("status") == "envoyé":
-        enregistrer_publication(sujet, marche, reseau)
+        enregistrer_publication(sujet, marche, reseau, ton=ton, source=source)
 
     print(f"[SCHEDULER] {marche.upper()} {reseau.upper()} | ton={ton} | source={source} | {sujet[:40]} → {result.get('status')}")
 
