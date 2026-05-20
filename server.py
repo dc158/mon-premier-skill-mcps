@@ -25,6 +25,25 @@ MAKE_WEBHOOK_URL = os.environ.get(
     "https://hook.eu1.make.com/5uob38x8gtk2tsgdsqvslh3tdjg58yw5"
 )
 
+RENDER_URL = os.environ.get(
+    "RENDER_URL",
+    "https://mon-premier-skill-mcps.onrender.com"
+)
+
+
+def self_ping():
+    """Ping le serveur lui-même pour empêcher Render free tier de s'endormir."""
+    try:
+        req = urllib.request.Request(
+            f"{RENDER_URL}/health",
+            headers={"User-Agent": "self-ping/1.0"},
+            method="GET",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            print(f"[PING] Self-ping OK — HTTP {resp.status}")
+    except Exception as e:
+        print(f"[PING] Self-ping échoué : {e}")
+
 
 def envoyer_vers_make(payload: dict) -> dict:
     """Envoie un payload JSON vers le webhook Make.com et retourne la réponse."""
@@ -558,10 +577,18 @@ def demarrer_scheduler():
                 replace_existing=True,
             )
 
+    # Self-ping toutes les 10 minutes pour empêcher le sleep de Render free tier
+    scheduler.add_job(
+        self_ping,
+        CronTrigger(minute="*/10"),
+        id="self_ping",
+        replace_existing=True,
+    )
+
     scheduler.start()
     total = len(horaires_france["tiktok"]) + len(horaires_france["linkedin"]) + len(horaires_france["instagram"]) + \
             len(horaires_dubai["tiktok"]) + len(horaires_dubai["linkedin"]) + len(horaires_dubai["instagram"])
-    print(f"⏰ Scheduler démarré — {total} publications automatiques/jour (France + Dubai)")
+    print(f"⏰ Scheduler démarré — {total} publications automatiques/jour (France + Dubai) + self-ping /10min")
     return scheduler
 
 
