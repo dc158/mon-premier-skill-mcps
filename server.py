@@ -5,9 +5,13 @@ import os
 import random
 import sys
 import urllib.request
+import xml.etree.ElementTree as ET
+
+# ─────────────────────────────────────────────
+# IMAGE
+# ─────────────────────────────────────────────
 
 def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
-    """Génère une URL d'image publique JPEG via Picsum Photos (seed déterministe par sujet)."""
     seed = (
         sujet.lower()
         .replace("é", "e").replace("è", "e").replace("ê", "e")
@@ -20,33 +24,218 @@ def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
     return f"https://picsum.photos/seed/{seed}/{dim}"
 
 
+# ─────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────
+
 MAKE_WEBHOOK_URL = os.environ.get(
     "MAKE_WEBHOOK_URL",
     "https://hook.eu1.make.com/5uob38x8gtk2tsgdsqvslh3tdjg58yw5"
 )
-
 RENDER_URL = os.environ.get(
     "RENDER_URL",
     "https://mon-premier-skill-mcps.onrender.com"
 )
+LOG_FILE = "/tmp/publications_log.json"
 
 
-def self_ping():
-    """Ping le serveur lui-même pour empêcher Render free tier de s'endormir."""
+# ─────────────────────────────────────────────
+# 1. ROTATION MENSUELLE — 28 sujets uniques par marché
+# ─────────────────────────────────────────────
+
+SUJETS_FRANCE_28 = [
+    # Semaine 1 — Identité & branding
+    "identité visuelle pour PME françaises",
+    "création de logo professionnel",
+    "charte graphique et cohérence de marque",
+    "personal branding pour dirigeants français",
+    "refonte de site web : avant / après",
+    "pourquoi votre site web ne convertit pas",
+    "site web mobile-first en 2025",
+    # Semaine 2 — SEO & visibilité
+    "SEO local pour commerces français",
+    "Google My Business pour PME",
+    "stratégie de contenu pour gagner en visibilité",
+    "LinkedIn B2B pour PME françaises",
+    "Instagram pour attirer des clients en France",
+    "TikTok : levier de croissance pour les PME",
+    "publicité digitale avec petit budget",
+    # Semaine 3 — E-commerce & conversion
+    "e-commerce pour boutiques françaises",
+    "UX et expérience utilisateur qui convertit",
+    "témoignages clients : la preuve sociale qui vend",
+    "tunnel de vente pour PME",
+    "automatisation marketing pour gagner du temps",
+    "IA et outils digitaux pour PME en 2025",
+    "email marketing : toujours rentable en 2025",
+    # Semaine 4 — Expertise & storytelling
+    "les erreurs fatales du webdesign en France",
+    "comment doubler son CA grâce au digital",
+    "success story : PME française transformée",
+    "tendances design à adopter en 2025",
+    "présence digitale : checklist complète pour PME",
+    "investir dans son image : ROI du design pro",
+]
+
+SUJETS_DUBAI_28 = [
+    # Semaine 1 — Luxury & prestige
+    "luxury branding et prestige digital à Dubai",
+    "identité visuelle bilingue FR-EN pour Dubai",
+    "création de logo pour entreprises du Golfe",
+    "personal branding pour entrepreneurs francophones",
+    "refonte de site web pour le marché émirati",
+    "site web premium pour la clientèle Dubai",
+    "charte graphique adaptée au marché du Moyen-Orient",
+    # Semaine 2 — E-commerce & marché
+    "e-commerce au Moyen-Orient : opportunités 2025",
+    "Shopify vs solutions locales à Dubai",
+    "stratégie digitale pour les expatriés francophones",
+    "LinkedIn pour les professionnels de Dubai",
+    "Instagram et TikTok pour les marques de Dubai",
+    "marketing digital halal et inclusif",
+    "SEO pour entreprises francophones à Dubai",
+    # Semaine 3 — Tech & innovation
+    "IA et startups tech à Dubai",
+    "transformation digitale des PME émiraties",
+    "automatisation et croissance pour entreprises Dubai",
+    "UX et design pour la clientèle premium du Golfe",
+    "témoignages : entrepreneurs francophones à Dubai",
+    "tunnel de vente pour le marché Dubai",
+    "publicité digitale ciblée Moyen-Orient",
+    # Semaine 4 — Expertise & storytelling
+    "les erreurs à éviter pour réussir à Dubai",
+    "comment développer sa marque au Golfe",
+    "success story : entreprise francophone à Dubai",
+    "tendances webdesign et digital à Dubai 2025",
+    "présence digitale : guide complet pour Dubai",
+    "ROI du design pro pour entreprises émiraties",
+]
+
+
+# ─────────────────────────────────────────────
+# 3. VARIATION DU TON — 5 tons en rotation
+# ─────────────────────────────────────────────
+
+TONS_ROTATION = ["professionnel", "educatif", "inspirant", "promotionnel", "storytelling"]
+
+def choisir_ton() -> str:
+    # Rotation quotidienne : chaque ton dure 1 jour sur 5
+    return TONS_ROTATION[datetime.now().timetuple().tm_yday % len(TONS_ROTATION)]
+
+
+# ─────────────────────────────────────────────
+# 2. MÉMOIRE DES PUBLICATIONS — log JSON local
+# ─────────────────────────────────────────────
+
+_publications_log: list = []
+
+def charger_log():
+    global _publications_log
     try:
-        req = urllib.request.Request(
-            f"{RENDER_URL}/health",
-            headers={"User-Agent": "self-ping/1.0"},
-            method="GET",
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            print(f"[PING] Self-ping OK — HTTP {resp.status}")
-    except Exception as e:
-        print(f"[PING] Self-ping échoué : {e}")
+        with open(LOG_FILE, "r", encoding="utf-8") as f:
+            _publications_log = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        _publications_log = []
 
+def sauvegarder_log():
+    with open(LOG_FILE, "w", encoding="utf-8") as f:
+        json.dump(_publications_log[-500:], f, ensure_ascii=False)
+
+def enregistrer_publication(sujet: str, marche: str, reseau: str):
+    _publications_log.append({
+        "sujet": sujet,
+        "marche": marche,
+        "reseau": reseau,
+        "timestamp": datetime.now().isoformat(),
+    })
+    sauvegarder_log()
+
+def sujet_deja_publie_recemment(sujet: str, marche: str, jours: int = 14) -> bool:
+    seuil = datetime.now() - timedelta(days=jours)
+    for entry in _publications_log:
+        try:
+            ts = datetime.fromisoformat(entry["timestamp"])
+        except (KeyError, ValueError):
+            continue
+        if entry.get("sujet") == sujet and entry.get("marche") == marche and ts > seuil:
+            return True
+    return False
+
+
+# ─────────────────────────────────────────────
+# 4. VEILLE CONCURRENTIELLE — RSS Google News
+# ─────────────────────────────────────────────
+
+TENDANCES_VEILLE: dict = {"france": [], "dubai": []}
+
+RSS_QUERIES = {
+    "france": "webdesign+agence+digitale+PME+identité+visuelle",
+    "dubai": "web+design+digital+agency+Dubai+francophone",
+}
+
+def scraper_tendances_rss(marche: str = "france") -> list:
+    """Scrappe Google News RSS pour détecter les tendances du secteur webdesign."""
+    query = RSS_QUERIES.get(marche, RSS_QUERIES["france"])
+    url = f"https://news.google.com/rss/search?q={query}&hl=fr&gl=FR&ceid=FR:fr"
+    titres = []
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            xml_data = resp.read()
+        root = ET.fromstring(xml_data)
+        channel = root.find("channel")
+        if channel is None:
+            return []
+        for item in channel.findall("item")[:10]:
+            titre_el = item.find("title")
+            if titre_el is not None and titre_el.text:
+                titres.append(titre_el.text.strip())
+    except Exception as e:
+        print(f"[VEILLE] RSS {marche} échoué : {e}")
+    return titres
+
+def rafraichir_veille():
+    """Appelé chaque matin à 06h00 UTC pour mettre à jour les tendances."""
+    for marche in ["france", "dubai"]:
+        titres = scraper_tendances_rss(marche)
+        TENDANCES_VEILLE[marche] = titres
+        print(f"[VEILLE] {marche.upper()} — {len(titres)} tendances récupérées")
+
+
+# ─────────────────────────────────────────────
+# 5. SÉLECTION INTELLIGENTE DU SUJET
+# ─────────────────────────────────────────────
+
+def choisir_sujet(marche: str) -> tuple[str, str]:
+    """
+    Retourne (sujet, source) en suivant la priorité :
+    1. Veille RSS (si non déjà publié)
+    2. Rotation mensuelle 28 sujets (si non déjà publié)
+    3. Rotation forcée (fallback)
+    """
+    sujets_28 = SUJETS_FRANCE_28 if marche == "france" else SUJETS_DUBAI_28
+
+    # Priorité 1 : sujet issu de la veille RSS
+    for titre in TENDANCES_VEILLE.get(marche, []):
+        if not sujet_deja_publie_recemment(titre, marche):
+            return titre, "veille_rss"
+
+    # Priorité 2 : rotation mensuelle sans doublon
+    jour = datetime.now().timetuple().tm_yday
+    for i in range(len(sujets_28)):
+        sujet = sujets_28[(jour + i) % len(sujets_28)]
+        if not sujet_deja_publie_recemment(sujet, marche):
+            return sujet, "rotation_mensuelle"
+
+    # Priorité 3 : fallback rotation forcée
+    return sujets_28[jour % len(sujets_28)], "rotation_forcee"
+
+
+# ─────────────────────────────────────────────
+# MAKE.COM
+# ─────────────────────────────────────────────
 
 def envoyer_vers_make(payload: dict) -> dict:
-    """Envoie un payload JSON vers le webhook Make.com et retourne la réponse."""
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         MAKE_WEBHOOK_URL,
@@ -60,6 +249,23 @@ def envoyer_vers_make(payload: dict) -> dict:
             return {"status": "envoyé", "make_response": body, "http_code": resp.status}
     except Exception as e:
         return {"status": "erreur", "detail": str(e)}
+
+def self_ping():
+    try:
+        req = urllib.request.Request(
+            f"{RENDER_URL}/health",
+            headers={"User-Agent": "self-ping/1.0"},
+            method="GET",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            print(f"[PING] Self-ping OK — HTTP {resp.status}")
+    except Exception as e:
+        print(f"[PING] Self-ping échoué : {e}")
+
+
+# ─────────────────────────────────────────────
+# MCP
+# ─────────────────────────────────────────────
 
 mcp = FastMCP("webdesign-co-community-manager")
 
@@ -175,7 +381,7 @@ def generer_contenu(
     Crée un post complet prêt à publier pour Webdesign & Co.
     reseau : 'tiktok', 'linkedin' ou 'instagram'.
     marche : 'france' ou 'dubai'.
-    ton : 'professionnel', 'inspirant' ou 'humoristique'.
+    ton : 'professionnel', 'educatif', 'inspirant', 'promotionnel', 'storytelling'.
     """
     reseau = reseau.lower()
     marche = marche.lower()
@@ -193,10 +399,25 @@ def generer_contenu(
             f"Ce que personne ne vous dit sur {sujet} en {marche.capitalize()}.",
             f"3 erreurs fatales à éviter sur {sujet} pour les PME {drapeau}",
         ],
+        "educatif": [
+            f"📚 Saviez-vous que {sujet} peut transformer votre business ? Voici comment ▼",
+            f"Leçon du jour : tout ce que vous devez savoir sur {sujet} en {marche.capitalize()}.",
+            f"Guide complet : {sujet} pour les PME {drapeau} — 3 points essentiels",
+        ],
         "inspirant": [
             f"Et si {sujet} était la clé de votre croissance en {marche.capitalize()} ? ✨",
             f"Nous avons transformé des PME grâce à {sujet}. Voici leur histoire 👇",
             f"La réussite digitale commence par {sujet}. On vous explique tout. {drapeau}",
+        ],
+        "promotionnel": [
+            f"🎯 Offre exclusive Webdesign & Co sur {sujet}. Places limitées !",
+            f"💥 Ce mois-ci : audit GRATUIT de votre {sujet} pour les PME {drapeau}",
+            f"Transformez votre image avec {sujet} — Diagnostic offert cette semaine !",
+        ],
+        "storytelling": [
+            f"Il y a 6 mois, cette PME {drapeau} galérait avec {sujet}. Aujourd'hui, elle cartonne. 👇",
+            f"On a tout misé sur {sujet} pour un client en {marche.capitalize()}. Voici ce qui s'est passé…",
+            f"De 0 à 10K abonnés grâce à {sujet} — l'histoire vraie d'une PME {drapeau}",
         ],
         "humoristique": [
             f"On ne va pas se mentir… {sujet}, c'est souvent le chaos 😅",
@@ -208,22 +429,57 @@ def generer_contenu(
     hook = random.choice(hooks.get(ton, hooks["professionnel"]))
     hashtags = " ".join(HASHTAGS_BASE[reseau][marche][:5])
 
+    corps_ton = {
+        "educatif": (
+            f"📖 POURQUOI C'EST IMPORTANT :\n"
+            f"{sujet} est l'un des leviers les plus puissants pour les PME {drapeau} en 2025.\n\n"
+            f"🔍 CE QUE VOUS DEVEZ SAVOIR :\n"
+            f"✅ 78% des PME sans stratégie digitale perdent des clients en ligne\n"
+            f"✅ Un design professionnel augmente la confiance de 60%\n"
+            f"✅ {sujet} = visibilité + crédibilité + croissance\n\n"
+        ),
+        "promotionnel": (
+            f"🚀 NOTRE OFFRE DU MOMENT :\n"
+            f"Webdesign & Co accompagne les PME {drapeau} sur {sujet}.\n\n"
+            f"✨ CE QUE VOUS OBTENEZ :\n"
+            f"🎁 Audit gratuit de votre présence digitale\n"
+            f"🎁 Stratégie personnalisée pour votre marché\n"
+            f"🎁 Accompagnement de A à Z\n\n"
+            f"⏰ Offre valable cette semaine seulement — places limitées !\n\n"
+        ),
+        "storytelling": (
+            f"📖 L'HISTOIRE :\n"
+            f"Un de nos clients en {marche.capitalize()} {drapeau} nous a contactés avec un problème simple :\n"
+            f"personne ne connaissait son entreprise, malgré 10 ans d'expérience.\n\n"
+            f"🔧 NOTRE INTERVENTION sur {sujet} :\n"
+            f"Nous avons repensé toute sa présence digitale en 6 semaines.\n\n"
+            f"📈 LE RÉSULTAT :\n"
+            f"✅ +300% de visibilité en ligne\n"
+            f"✅ 3 nouveaux clients en 30 jours\n"
+            f"✅ Une image de marque qui inspire confiance\n\n"
+        ),
+    }
+
+    corps_defaut = (
+        f"Chez Webdesign & Co, nous accompagnons les PME {drapeau} dans leur transformation digitale.\n\n"
+        f"Notre approche sur {sujet} :\n"
+        f"✦ Audit de votre présence digitale\n"
+        f"✦ Stratégie sur mesure\n"
+        f"✦ Création & déploiement\n"
+        f"✦ Suivi & optimisation\n\n"
+    )
+
+    corps = corps_ton.get(ton, corps_defaut)
+
     if reseau == "tiktok":
         contenu = (
             f"🎬 SCRIPT TIKTOK — Webdesign & Co {drapeau}\n"
             f"{'='*50}\n\n"
             f"⏱️ DURÉE CONSEILLÉE : 30-45 secondes\n\n"
             f"🎯 ACCROCHE (0-3 sec) :\n« {hook} »\n\n"
-            f"📖 DÉVELOPPEMENT (3-25 sec) :\n"
-            f"Chez Webdesign & Co, on aide les PME {drapeau} à se démarquer grâce à {sujet}.\n"
-            f"Résultat : plus de visibilité, plus de clients, plus de chiffre d'affaires.\n"
-            f"On ne fait pas que du design — on crée votre image de marque.\n\n"
-            f"💡 CONSEIL CLÉ (25-40 sec) :\n"
-            f"Pour réussir avec {sujet}, voici ce qu'il faut absolument faire :\n"
-            f"✅ Définir une identité visuelle forte\n"
-            f"✅ Être cohérent sur tous vos canaux\n"
-            f"✅ Mesurer vos résultats chaque semaine\n\n"
-            f"🔚 CALL TO ACTION (40-45 sec) :\n"
+            f"📖 DÉVELOPPEMENT (3-35 sec) :\n"
+            f"{corps}"
+            f"🔚 CALL TO ACTION (35-45 sec) :\n"
             f"« Suivez-nous pour plus de conseils ! Lien en bio pour un audit gratuit. »\n\n"
             f"#️⃣ HASHTAGS :\n{hashtags} #WebdesignAndCo\n"
         )
@@ -234,18 +490,9 @@ def generer_contenu(
             f"{'='*50}\n\n"
             f"📌 ACCROCHE :\n{hook}\n\n"
             f"📝 CORPS DU POST :\n"
-            f"En tant que dirigeant de PME en {marche.capitalize()}, vous savez que {sujet} est devenu incontournable.\n\n"
-            f"Chez Webdesign & Co, nous accompagnons les entreprises francophones {drapeau} dans leur transformation digitale.\n\n"
-            f"Voici ce que nous observons sur le terrain :\n\n"
-            f"→ 78% des PME perdent des clients à cause d'un manque de présence en ligne\n"
-            f"→ Un design professionnel augmente la confiance client de 60%\n"
-            f"→ {sujet} est le levier n°1 de croissance digitale en 2025\n\n"
-            f"Notre approche chez Webdesign & Co :\n"
-            f"✦ Audit de votre présence digitale\n"
-            f"✦ Stratégie sur mesure pour votre marché\n"
-            f"✦ Création & déploiement de votre identité visuelle\n"
-            f"✦ Suivi & optimisation en continu\n\n"
-            f"🎯 Vous souhaitez développer votre activité grâce à {sujet} ?\n"
+            f"En tant que dirigeant de PME en {marche.capitalize()}, {sujet} est devenu incontournable.\n\n"
+            f"{corps}"
+            f"🎯 Prêt à passer à l'étape suivante ?\n"
             f"Contactez-nous pour un audit offert → lien en commentaire.\n\n"
             f"♻️ Partagez si cela peut aider un entrepreneur de votre réseau !\n\n"
             f"#️⃣ HASHTAGS :\n{hashtags} #WebdesignAndCo\n"
@@ -259,12 +506,7 @@ def generer_contenu(
             f"✍️ LÉGENDE :\n"
             f"{hook}\n\n"
             f"✨ {sujet} : le secret des PME qui cartonnent en {marche.capitalize()} {drapeau}\n\n"
-            f"Chez Webdesign & Co, on transforme votre vision en identité visuelle percutante.\n"
-            f"Parce qu'un beau design, c'est bien — un design qui convertit, c'est mieux. 💪\n\n"
-            f"Ce qu'on vous offre :\n"
-            f"🎨 Design sur mesure\n"
-            f"📱 Stratégie réseaux sociaux\n"
-            f"🚀 Visibilité & croissance garanties\n\n"
+            f"{corps}"
             f"👇 Commentez 'AUDIT' pour recevoir votre diagnostic gratuit !\n\n"
             f"#️⃣ HASHTAGS :\n{hashtags} #WebdesignAndCo\n"
         )
@@ -273,10 +515,7 @@ def generer_contenu(
 
 
 @mcp.tool()
-def planifier_calendrier(
-    marche: str = "france",
-    semaine_debut: str = ""
-) -> str:
+def planifier_calendrier(marche: str = "france", semaine_debut: str = "") -> str:
     """
     Génère un calendrier éditorial hebdomadaire complet pour Webdesign & Co.
     marche : 'france' ou 'dubai'.
@@ -347,12 +586,7 @@ def planifier_calendrier(
 
 
 @mcp.tool()
-def suggerer_hashtags(
-    sujet: str,
-    reseau: str,
-    marche: str = "france",
-    nb_hashtags: int = 15
-) -> str:
+def suggerer_hashtags(sujet: str, reseau: str, marche: str = "france", nb_hashtags: int = 15) -> str:
     """
     Propose des hashtags optimisés pour Webdesign & Co selon le réseau et le marché.
     reseau : 'tiktok', 'linkedin' ou 'instagram'.
@@ -412,12 +646,7 @@ def suggerer_hashtags(
 
 
 @mcp.tool()
-def generer_legende(
-    sujet: str,
-    reseau: str,
-    marche: str = "france",
-    objectif: str = "engagement"
-) -> str:
+def generer_legende(sujet: str, reseau: str, marche: str = "france", objectif: str = "engagement") -> str:
     """
     Crée une légende complète prête à copier-coller pour Webdesign & Co.
     reseau : 'tiktok', 'linkedin' ou 'instagram'.
@@ -437,7 +666,7 @@ def generer_legende(
     ctas = {
         "engagement": {
             "tiktok": "💬 Et toi, c'est quoi ta plus grande galère avec ça ? Dis-le en commentaire !",
-            "linkedin": "🔔 Suivez Webdesign & Co pour ne manquer aucun conseil. Et vous, quelle est votre expérience sur ce sujet ?",
+            "linkedin": "🔔 Suivez Webdesign & Co pour ne manquer aucun conseil. Et vous, quelle est votre expérience ?",
             "instagram": "❤️ Likez si vous êtes d'accord ! Taguez un entrepreneur qui a besoin de lire ça. 👇",
         },
         "vente": {
@@ -457,7 +686,6 @@ def generer_legende(
 
     cta = ctas[objectif][reseau]
     hashtags = " ".join(HASHTAGS_BASE[reseau][marche][:8]) + " #WebdesignAndCo"
-
     emojis_intro = {"tiktok": "🎬", "linkedin": "💼", "instagram": "✨"}
     emoji = emojis_intro[reseau]
 
@@ -485,43 +713,39 @@ def generer_legende(
     return legende
 
 
-SUJETS_AUTO = {
-    "france": [
-        "identité visuelle pour PME",
-        "site web mobile-first en 2025",
-        "personal branding pour dirigeants",
-        "SEO local pour commerces français",
-        "IA et automatisation pour PME",
-    ],
-    "dubai": [
-        "luxury branding et prestige digital",
-        "e-commerce au Moyen-Orient",
-        "personal branding pour entrepreneurs francophones",
-        "identité visuelle bilingue FR-EN",
-        "IA et startups tech à Dubai",
-    ],
-}
-
+# ─────────────────────────────────────────────
+# PUBLICATION AUTOMATIQUE
+# ─────────────────────────────────────────────
 
 def publier_automatiquement(marche: str, reseau: str):
-    """Appelé par le scheduler : choisit un sujet et envoie vers Make.com."""
-    sujets = SUJETS_AUTO.get(marche, SUJETS_AUTO["france"])
-    sujet = sujets[datetime.now().weekday() % len(sujets)]
+    """
+    Appelé par le scheduler.
+    1. Choisit un sujet intelligent (veille > rotation sans doublon)
+    2. Choisit un ton en rotation automatique
+    3. Génère le contenu pour les 3 réseaux
+    4. Enregistre dans le log anti-doublon
+    5. Envoie vers Make.com
+    """
+    sujet, source = choisir_sujet(marche)
+    ton = choisir_ton()
+
     payload = {
         "sujet": sujet,
         "marche": marche,
         "reseau_principal": reseau,
+        "ton": ton,
+        "source_sujet": source,
         "publications": {
             "tiktok": {
-                "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche),
+                "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
                 "image_url": generer_image_url(sujet, "tiktok"),
             },
             "linkedin": {
-                "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche),
+                "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
                 "image_url": generer_image_url(sujet, "linkedin"),
             },
             "instagram": {
-                "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche),
+                "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
                 "image_url": generer_image_url(sujet, "instagram"),
             },
         },
@@ -533,18 +757,27 @@ def publier_automatiquement(marche: str, reseau: str):
         "declencheur": "scheduler_automatique",
         "timestamp": datetime.now().isoformat(),
     }
-    result = envoyer_vers_make(payload)
-    print(f"[SCHEDULER] {marche.upper()} {reseau.upper()} — {sujet} → {result.get('status')}")
 
+    result = envoyer_vers_make(payload)
+    if result.get("status") == "envoyé":
+        enregistrer_publication(sujet, marche, reseau)
+
+    print(f"[SCHEDULER] {marche.upper()} {reseau.upper()} | ton={ton} | source={source} | {sujet[:40]} → {result.get('status')}")
+
+
+# ─────────────────────────────────────────────
+# SCHEDULER
+# ─────────────────────────────────────────────
 
 def demarrer_scheduler():
-    """Configure et démarre le scheduler APScheduler avec les horaires optimaux par marché."""
     from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.cron import CronTrigger
 
+    charger_log()
+
     scheduler = BackgroundScheduler(timezone="UTC")
 
-    # France (UTC+2 été / UTC+1 hiver — on utilise UTC)
+    # France (UTC+2 été)
     horaires_france = {
         "tiktok":    [("05", "00"), ("10", "00"), ("17", "00"), ("19", "00")],
         "linkedin":  [("06", "00"), ("10", "30"), ("15", "30")],
@@ -577,7 +810,15 @@ def demarrer_scheduler():
                 replace_existing=True,
             )
 
-    # Self-ping toutes les 10 minutes pour empêcher le sleep de Render free tier
+    # Veille RSS chaque matin à 06h00 UTC
+    scheduler.add_job(
+        rafraichir_veille,
+        CronTrigger(hour=6, minute=0),
+        id="veille_rss",
+        replace_existing=True,
+    )
+
+    # Self-ping toutes les 10 minutes
     scheduler.add_job(
         self_ping,
         CronTrigger(minute="*/10"),
@@ -586,14 +827,16 @@ def demarrer_scheduler():
     )
 
     scheduler.start()
-    total = len(horaires_france["tiktok"]) + len(horaires_france["linkedin"]) + len(horaires_france["instagram"]) + \
-            len(horaires_dubai["tiktok"]) + len(horaires_dubai["linkedin"]) + len(horaires_dubai["instagram"])
-    print(f"⏰ Scheduler démarré — {total} publications automatiques/jour (France + Dubai) + self-ping /10min")
+    total = sum(len(s) for s in horaires_france.values()) + sum(len(s) for s in horaires_dubai.values())
+    print(f"⏰ Scheduler démarré — {total} publications/jour + veille RSS 06h00 + self-ping /10min")
     return scheduler
 
 
+# ─────────────────────────────────────────────
+# SERVEUR HTTP
+# ─────────────────────────────────────────────
+
 def run_webhook_server():
-    """Serveur HTTP pour Make.com — lance avec : python server.py --webhook"""
     from fastapi import FastAPI, Request, HTTPException, Header
     from fastapi.responses import JSONResponse
     import uvicorn
@@ -603,7 +846,7 @@ def run_webhook_server():
     app = FastAPI(
         title="Webdesign & Co — Webhook Make.com",
         description="API webhook pour publier automatiquement sur TikTok, LinkedIn et Instagram",
-        version="1.0.0",
+        version="2.0.0",
     )
 
     def verifier_secret(x_webhook_secret: str = Header(default="")):
@@ -614,15 +857,18 @@ def run_webhook_server():
 
     @app.get("/health")
     async def health():
-        return {"status": "ok", "service": "Webdesign & Co Webhook", "scheduler": "running"}
+        return {
+            "status": "ok",
+            "service": "Webdesign & Co Webhook",
+            "scheduler": "running",
+            "publications_loggees": len(_publications_log),
+            "tendances_veille": {m: len(t) for m, t in TENDANCES_VEILLE.items()},
+        }
 
     @app.get("/scheduler/status")
     async def scheduler_status():
         jobs = [
-            {
-                "id": job.id,
-                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
-            }
+            {"id": job.id, "next_run": job.next_run_time.isoformat() if job.next_run_time else None}
             for job in scheduler.get_jobs()
         ]
         return JSONResponse({
@@ -632,9 +878,28 @@ def run_webhook_server():
             "jobs": jobs,
         })
 
+    @app.get("/log/publications")
+    async def log_publications():
+        """Retourne l'historique des publications pour éviter les doublons."""
+        return JSONResponse({
+            "total": len(_publications_log),
+            "publications": _publications_log[-50:],
+        })
+
+    @app.get("/veille/tendances")
+    async def veille_tendances():
+        """Retourne les tendances RSS en cours."""
+        return JSONResponse({"tendances": TENDANCES_VEILLE})
+
+    @app.post("/veille/rafraichir")
+    async def veille_rafraichir(request: Request):
+        """Force un refresh immédiat de la veille RSS."""
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        rafraichir_veille()
+        return JSONResponse({"status": "ok", "tendances": TENDANCES_VEILLE})
+
     @app.post("/scheduler/publier-maintenant")
     async def scheduler_publier_maintenant(request: Request):
-        """Déclenche immédiatement une publication vers Make.com sans attendre le scheduler."""
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         marche = data.get("marche", "france")
@@ -644,12 +909,6 @@ def run_webhook_server():
 
     @app.post("/webhook/generer-contenu")
     async def webhook_generer_contenu(request: Request):
-        """
-        Génère un post complet pour un réseau social.
-        Body JSON : { "sujet": "...", "reseau": "tiktok|linkedin|instagram",
-                      "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
@@ -665,25 +924,20 @@ def run_webhook_server():
 
     @app.post("/webhook/publier-tous-reseaux")
     async def webhook_publier_tous_reseaux(request: Request):
-        """
-        Génère le contenu pour TikTok, LinkedIn et Instagram en une seule requête.
-        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique",
-                      "image_url": "https://...", "date_publication": "2025-01-15T10:00:00" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
         if not sujet:
             raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
         marche = data.get("marche", "france")
-        ton = data.get("ton", "professionnel")
+        ton = data.get("ton", choisir_ton())
         image_url = data.get("image_url", "")
         date_publication = data.get("date_publication", "")
         return JSONResponse({
             "status": "success",
             "sujet": sujet,
             "marche": marche,
+            "ton": ton,
             "image_url": image_url or generer_image_url(sujet, "instagram"),
             "date_publication": date_publication,
             "publications": {
@@ -712,11 +966,6 @@ def run_webhook_server():
 
     @app.post("/webhook/analyser-tendances")
     async def webhook_analyser_tendances(request: Request):
-        """
-        Retourne les tendances virales pour un marché.
-        Body JSON : { "marche": "france|dubai", "nb_tendances": 5 }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         return JSONResponse({
@@ -729,11 +978,6 @@ def run_webhook_server():
 
     @app.post("/webhook/planifier-calendrier")
     async def webhook_planifier_calendrier(request: Request):
-        """
-        Génère un calendrier éditorial hebdomadaire.
-        Body JSON : { "marche": "france|dubai", "semaine_debut": "JJ/MM/AAAA" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         return JSONResponse({
@@ -746,12 +990,6 @@ def run_webhook_server():
 
     @app.post("/webhook/generer-legende")
     async def webhook_generer_legende(request: Request):
-        """
-        Génère une légende prête à copier-coller.
-        Body JSON : { "sujet": "...", "reseau": "tiktok|linkedin|instagram",
-                      "marche": "france|dubai", "objectif": "engagement|vente|notoriete" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
@@ -769,24 +1007,19 @@ def run_webhook_server():
 
     @app.post("/webhook/envoyer-vers-make")
     async def webhook_envoyer_vers_make(request: Request):
-        """
-        Génère le contenu pour TikTok, LinkedIn et Instagram, puis l'envoie
-        automatiquement vers le webhook Make.com configuré.
-        Body JSON : { "sujet": "...", "marche": "france|dubai", "ton": "professionnel|inspirant|humoristique" }
-        Header requis : X-Webhook-Secret
-        """
         verifier_secret(request.headers.get("x-webhook-secret", ""))
         data = await request.json()
         sujet = data.get("sujet", "")
         if not sujet:
             raise HTTPException(status_code=400, detail="Le champ 'sujet' est requis.")
         marche = data.get("marche", "france")
-        ton = data.get("ton", "professionnel")
+        ton = data.get("ton", choisir_ton())
         image_url_fournie = data.get("image_url", "")
 
         payload = {
             "sujet": sujet,
             "marche": marche,
+            "ton": ton,
             "publications": {
                 "tiktok": {
                     "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
@@ -818,7 +1051,7 @@ def run_webhook_server():
         })
 
     port = int(os.environ.get("PORT", 8000))
-    print(f"🚀 Webhook Webdesign & Co démarré sur http://0.0.0.0:{port}")
+    print(f"🚀 Webhook Webdesign & Co v2.0 démarré sur http://0.0.0.0:{port}")
     print(f"📖 Documentation : http://0.0.0.0:{port}/docs")
     print(f"🔐 Secret actif  : {WEBHOOK_SECRET}")
     print(f"📡 Make.com URL  : {MAKE_WEBHOOK_URL}")
