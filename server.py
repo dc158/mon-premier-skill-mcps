@@ -1175,6 +1175,257 @@ def generer_legende(sujet: str, reseau: str, marche: str = "france", objectif: s
 
 
 # ─────────────────────────────────────────────
+# AUDIT DE SITE WEB
+# ─────────────────────────────────────────────
+
+def _fetch_html(url: str, timeout: int = 15) -> tuple:
+    """Récupère le HTML d'une URL. Retourne (html_str, error_str)."""
+    if not url.startswith("http"):
+        url = "https://" + url
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                ),
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            charset = resp.headers.get_content_charset() or "utf-8"
+            return resp.read().decode(charset, errors="replace"), None
+    except Exception as e:
+        return "", str(e)
+
+
+def _extract_tag(html: str, tag: str, attr: str = "", attr_val: str = "") -> str:
+    """Extraction basique d'un tag HTML sans dépendance externe."""
+    import re
+    if attr and attr_val:
+        pattern = rf'<{tag}[^>]*{attr}=["\']?{re.escape(attr_val)}["\']?[^>]*content=["\']([^"\']*)["\']'
+        m = re.search(pattern, html, re.IGNORECASE)
+        if not m:
+            pattern = rf'<{tag}[^>]*content=["\']([^"\']*)["\'][^>]*{attr}=["\']?{re.escape(attr_val)}["\']?'
+            m = re.search(pattern, html, re.IGNORECASE)
+        return m.group(1).strip() if m else ""
+    pattern = rf'<{tag}[^>]*>([^<]*)</{tag}>'
+    m = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+    return m.group(1).strip() if m else ""
+
+
+def _count_pattern(html: str, pattern: str) -> int:
+    import re
+    return len(re.findall(pattern, html, re.IGNORECASE))
+
+
+def _score_label(score: int) -> str:
+    if score >= 80:
+        return "🟢 BON"
+    if score >= 50:
+        return "🟡 MOYEN"
+    return "🔴 CRITIQUE"
+
+
+@mcp.tool()
+def auditer_site_web(url: str, marche: str = "france") -> str:
+    """
+    Audit SEO & marketing complet d'un site web pour Webdesign & Co.
+    Analyse : indexabilité, balises SEO, Open Graph, performance, mobile,
+    contenu, CTA, réseaux sociaux, sécurité HTTPS.
+    url    : URL complète ou domaine (ex: webdesignandco.org)
+    marche : 'france' ou 'dubai' (adapte les recommandations)
+    """
+    import re
+
+    marche = marche.lower()
+    drapeau = MARCHES.get(marche, MARCHES["france"])["emoji_drapeau"]
+
+    if not url.startswith("http"):
+        url = "https://" + url
+
+    html, error = _fetch_html(url)
+
+    lignes = [
+        f"🔍 AUDIT SITE WEB — Webdesign & Co {drapeau}",
+        f"URL analysée : {url}",
+        f"Date         : {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+        "=" * 60,
+        "",
+    ]
+
+    if error or not html:
+        lignes += [
+            "🔴 ACCÈS IMPOSSIBLE",
+            f"   Erreur : {error or 'Contenu vide'}",
+            "",
+            "⚠️  DIAGNOSTIC : Le site bloque les crawlers automatiques.",
+            "   → Cela signifie que Google ne peut probablement pas l'indexer non plus.",
+            "   → Action urgente : vérifier Cloudflare / WAF et whitelister Googlebot.",
+            "",
+            "RECOMMANDATIONS BASÉES SUR LE DIAGNOSTIC D'ACCÈS :",
+            "   1. Vérifier robots.txt (doit retourner HTTP 200, pas 403)",
+            "   2. Whitelister Googlebot dans Cloudflare",
+            "   3. Soumettre le sitemap.xml dans Google Search Console",
+            "   4. Tester avec Google Search Console → Inspection d'URL",
+        ]
+        return "\n".join(lignes)
+
+    # ── Extraction des signaux ──
+    title = _extract_tag(html, "title")
+    meta_desc = _extract_tag(html, "meta", "name", "description")
+    meta_robots = _extract_tag(html, "meta", "name", "robots")
+    canonical = ""
+    m_can = re.search(r'<link[^>]*rel=["\']canonical["\'][^>]*href=["\']([^"\']+)["\']', html, re.IGNORECASE)
+    if m_can:
+        canonical = m_can.group(1)
+
+    og_title = _extract_tag(html, "meta", "property", "og:title")
+    og_desc = _extract_tag(html, "meta", "property", "og:description")
+    og_image = _extract_tag(html, "meta", "property", "og:image")
+    og_type = _extract_tag(html, "meta", "property", "og:type")
+
+    viewport = _extract_tag(html, "meta", "name", "viewport")
+    https_ok = url.startswith("https://")
+
+    h1_matches = re.findall(r'<h1[^>]*>(.*?)</h1>', html, re.IGNORECASE | re.DOTALL)
+    h1_count = len(h1_matches)
+    h1_text = re.sub(r'<[^>]+>', '', h1_matches[0]).strip() if h1_matches else ""
+    h2_count = _count_pattern(html, r'<h2[^>]*>')
+    img_total = _count_pattern(html, r'<img[^>]*>')
+    img_no_alt = _count_pattern(html, r'<img(?![^>]*alt=["\'][^"\']+["\'])[^>]*>')
+    script_count = _count_pattern(html, r'<script[^>]*src=')
+    link_count = _count_pattern(html, r'<link[^>]*stylesheet')
+
+    has_form = bool(re.search(r'<form', html, re.IGNORECASE))
+    has_phone = bool(re.search(r'(\+\d{1,3}[\s\-]?)?(\(?\d{2,4}\)?[\s\-]?){3,5}', html))
+    has_email = bool(re.search(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}', html))
+    has_whatsapp = bool(re.search(r'wa\.me|whatsapp', html, re.IGNORECASE))
+    has_linkedin = bool(re.search(r'linkedin\.com', html, re.IGNORECASE))
+    has_instagram = bool(re.search(r'instagram\.com', html, re.IGNORECASE))
+    has_tiktok = bool(re.search(r'tiktok\.com', html, re.IGNORECASE))
+    has_cta_audit = bool(re.search(r'audit|gratuit|diagnostic|devis', html, re.IGNORECASE))
+
+    word_count = len(re.sub(r'<[^>]+>', ' ', html).split())
+
+    # ── Scoring ──
+    score_seo = 0
+    score_seo += 20 if title and 50 <= len(title) <= 65 else (10 if title else 0)
+    score_seo += 20 if meta_desc and 120 <= len(meta_desc) <= 160 else (10 if meta_desc else 0)
+    score_seo += 15 if h1_count == 1 else (5 if h1_count > 1 else 0)
+    score_seo += 15 if canonical else 0
+    score_seo += 15 if "noindex" not in meta_robots.lower() else 0
+    score_seo += 15 if h2_count >= 2 else (8 if h2_count == 1 else 0)
+
+    score_perf = 0
+    score_perf += 30 if https_ok else 0
+    score_perf += 30 if viewport else 0
+    score_perf += 20 if script_count <= 5 else (10 if script_count <= 10 else 0)
+    score_perf += 20 if img_no_alt == 0 else (10 if img_no_alt <= 3 else 0)
+
+    score_conv = 0
+    score_conv += 25 if has_form else 0
+    score_conv += 20 if has_cta_audit else 0
+    score_conv += 15 if has_phone else 0
+    score_conv += 15 if has_email else 0
+    score_conv += 15 if has_whatsapp else 0
+    score_conv += 10 if word_count >= 500 else (5 if word_count >= 200 else 0)
+
+    score_social = 0
+    score_social += 25 if og_title else 0
+    score_social += 25 if og_image else 0
+    score_social += 15 if og_desc else 0
+    score_social += 15 if has_linkedin else 0
+    score_social += 10 if has_instagram else 0
+    score_social += 10 if has_tiktok else 0
+
+    score_global = (score_seo + score_perf + score_conv + score_social) // 4
+
+    # ── Rapport ──
+    lignes += [
+        f"📊 SCORE GLOBAL : {score_global}/100 — {_score_label(score_global)}",
+        "",
+        f"   SEO           : {score_seo}/100 {_score_label(score_seo)}",
+        f"   Performance   : {score_perf}/100 {_score_label(score_perf)}",
+        f"   Conversion    : {score_conv}/100 {_score_label(score_conv)}",
+        f"   Réseaux/OG    : {score_social}/100 {_score_label(score_social)}",
+        "",
+        "─" * 60,
+        "🔎 DÉTAIL SEO",
+        f"   Titre          : {'✅ ' + title[:55] + ('…' if len(title) > 55 else '') if title else '🔴 ABSENT'}",
+        f"   Longueur titre : {'✅ ' + str(len(title)) + ' car.' if title and 50 <= len(title) <= 65 else '🟡 ' + str(len(title)) + ' car. (idéal: 50-65)' if title else '🔴 -'}",
+        f"   Meta desc      : {'✅ OK' if meta_desc and 120 <= len(meta_desc) <= 160 else '🟡 ' + str(len(meta_desc)) + ' car. (idéal: 120-160)' if meta_desc else '🔴 ABSENTE'}",
+        f"   H1             : {'✅ 1 H1 → ' + h1_text[:40] if h1_count == 1 else '🟡 ' + str(h1_count) + ' H1 (doit être unique)' if h1_count > 1 else '🔴 AUCUN H1'}",
+        f"   H2             : {'✅ ' + str(h2_count) + ' H2' if h2_count >= 2 else '🟡 ' + str(h2_count) + ' H2 (min. 2 recommandé)'}",
+        f"   Canonical      : {'✅ Présente' if canonical else '🟡 Absente'}",
+        f"   Robots meta    : {'✅ ' + (meta_robots or 'index,follow') if 'noindex' not in meta_robots.lower() else '🔴 NOINDEX DÉTECTÉ'}",
+        f"   Mots sur page  : {'✅ ' + str(word_count) if word_count >= 500 else '🟡 ' + str(word_count) + ' (min. 500 recommandé)'}",
+        "",
+        "─" * 60,
+        "⚡ PERFORMANCE & MOBILE",
+        f"   HTTPS          : {'✅ Activé' if https_ok else '🔴 NON SÉCURISÉ'}",
+        f"   Balise viewport: {'✅ Mobile-ready' if viewport else '🔴 ABSENTE — site non mobile'}",
+        f"   Scripts JS     : {'✅ ' + str(script_count) + ' scripts' if script_count <= 5 else '🟡 ' + str(script_count) + ' scripts (impact vitesse)'}",
+        f"   Images sans alt: {'✅ Toutes renseignées' if img_no_alt == 0 else '🟡 ' + str(img_no_alt) + '/' + str(img_total) + ' images sans texte alt'}",
+        "",
+        "─" * 60,
+        "🎯 CONVERSION & CTA",
+        f"   Formulaire     : {'✅ Présent' if has_form else '🔴 ABSENT — aucun moyen de capturer des leads'}",
+        f"   Offre audit    : {'✅ Mentionnée' if has_cta_audit else '🔴 ABSENTE — ajoutez un CTA audit gratuit'}",
+        f"   Téléphone      : {'✅ Visible' if has_phone else '🟡 Non détecté'}",
+        f"   Email          : {'✅ Visible' if has_email else '🟡 Non détecté'}",
+        f"   WhatsApp       : {'✅ Intégré' if has_whatsapp else '🟡 Absent — fort potentiel PME'}",
+        "",
+        "─" * 60,
+        "📱 OPEN GRAPH & RÉSEAUX SOCIAUX",
+        f"   og:title       : {'✅ ' + og_title[:40] if og_title else '🔴 ABSENT — partages sans titre'}",
+        f"   og:image       : {'✅ Présente' if og_image else '🔴 ABSENTE — partages sans visuel'}",
+        f"   og:description : {'✅ Présente' if og_desc else '🟡 Absente'}",
+        f"   LinkedIn       : {'✅ Lié' if has_linkedin else '🟡 Non détecté'}",
+        f"   Instagram      : {'✅ Lié' if has_instagram else '🟡 Non détecté'}",
+        f"   TikTok         : {'✅ Lié' if has_tiktok else '🟡 Non détecté'}",
+        "",
+        "=" * 60,
+        "🚀 TOP 5 ACTIONS PRIORITAIRES — WEBDESIGN & CO",
+    ]
+
+    actions = []
+    if not title or len(title) < 50:
+        actions.append(f"① Réécrire le titre : « Agence Web & Design Premium | PME {marche.capitalize()} & Dubai | Webdesign & Co »")
+    if not meta_desc:
+        actions.append("② Ajouter une meta description (120-160 car.) avec mots-clés cibles et CTA")
+    if not og_image:
+        actions.append("③ Ajouter les balises Open Graph (og:image, og:title) pour des partages soignés")
+    if not has_form:
+        actions.append("④ Ajouter un formulaire de capture leads (audit gratuit) en homepage")
+    if not has_whatsapp:
+        actions.append("⑤ Intégrer un bouton WhatsApp flottant — conversion +35% sur mobile")
+    if not has_tiktok:
+        actions.append("⑥ Ajouter le lien TikTok pour fermer la boucle social → site")
+    if score_seo < 60:
+        actions.append("⑦ Audit SEO complet : structure H1/H2, contenu 800+ mots, balises schema.org")
+
+    for i, a in enumerate(actions[:5], 1):
+        if not a.startswith(f"⑤") and not a.startswith(f"⑥") and not a.startswith(f"⑦"):
+            lignes.append(f"   {a}")
+        else:
+            lignes.append(f"   {a}")
+
+    lignes += [
+        "",
+        "─" * 60,
+        f"📋 RAPPORT GÉNÉRÉ PAR WEBDESIGN & CO {drapeau}",
+        f"   Pour transformer ces recommandations en résultats :",
+        f"   → webdesignandco.org | Audit complet offert",
+    ]
+
+    return "\n".join(lignes)
+
+
+# ─────────────────────────────────────────────
 # PUBLICATION AUTOMATIQUE
 # ─────────────────────────────────────────────
 
@@ -1494,6 +1745,30 @@ def run_webhook_server():
                 semaine_debut=data.get("semaine_debut", ""),
                 objectif=data.get("objectif", "leads"),
             ),
+        })
+
+    @app.post("/webhook/audit-site")
+    async def webhook_audit_site(request: Request):
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        url = data.get("url", "")
+        if not url:
+            raise HTTPException(status_code=400, detail="Le champ 'url' est requis.")
+        return JSONResponse({
+            "status": "success",
+            "audit": auditer_site_web(
+                url=url,
+                marche=data.get("marche", "france"),
+            ),
+        })
+
+    @app.get("/audit")
+    async def get_audit(url: str, marche: str = "france"):
+        if not url:
+            raise HTTPException(status_code=400, detail="Paramètre 'url' requis.")
+        return JSONResponse({
+            "status": "success",
+            "audit": auditer_site_web(url=url, marche=marche),
         })
 
     @app.post("/webhook/envoyer-vers-make")
