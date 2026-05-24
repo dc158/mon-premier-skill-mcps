@@ -1,0 +1,33 @@
+# robots.txt — webdesignandco.org
+# Dernière mise à jour : 2025-05-24
+
+# Autoriser tous les moteurs de recherche
+User-agent: *
+Allow: /
+
+# Bloquer les pages inutiles pour le SEO
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-login.php
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /my-account/
+Disallow: /merci/
+Disallow: /?s=
+Disallow: /search/
+
+# Autoriser explicitement Googlebot et Bingbot
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+# Sitemap
+Sitemap: https://webdesignandco.org/sitemap.xml

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nos Services — Création Site Web, SEO, Branding, Dubai | Webdesign & Co</title>
+  <meta name="description" content="Création de site web, identité visuelle, SEO, réseaux sociaux, e-commerce et marché Dubai. Tous nos services digitaux pour PME francophones. Devis gratuit." />
+  <link rel="canonical" href="https://webdesignandco.org/services/" />
+  <meta property="og:title"       content="Nos Services | Webdesign & Co" />
+  <meta property="og:description" content="Site web, branding, SEO, réseaux sociaux, e-commerce et expertise Dubai. Tout pour propulser votre PME en ligne." />
+  <meta property="og:image"       content="https://webdesignandco.org/og-services.jpg" />
+  <meta property="og:url"         content="https://webdesignandco.org/services/" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    .offer-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:2rem; margin-top:3rem; }
+    .offer-card {
+      border:1.5px solid var(--border);
+      border-radius:var(--radius-lg);
+      overflow:hidden;
+      transition:var(--transition);
+      background:var(--white);
+    }
+    .offer-card:hover { border-color:var(--violet-light); box-shadow:var(--shadow-lg); transform:translateY(-4px); }
+    .offer-card-head {
+      background:linear-gradient(135deg, var(--violet) 0%, var(--violet-dark) 100%);
+      color:var(--white);
+      padding:2rem;
+    }
+    .offer-icon { font-size:2rem; margin-bottom:.75rem; }
+    .offer-card-head h3 { color:var(--white); font-size:1.25rem; margin-bottom:.4rem; }
+    .offer-card-head p { color:rgba(255,255,255,.75); font-size:.9rem; }
+    .offer-card-body { padding:2rem; }
+    .offer-features { margin-bottom:1.5rem; }
+    .offer-feature {
+      display:flex; gap:.65rem; align-items:flex-start;
+      margin-bottom:.7rem; font-size:.9rem;
+    }
+    .offer-feature .check { color:var(--violet); font-weight:900; flex-shrink:0; }
+    .offer-price {
+      display:flex; align-items:baseline; gap:.5rem;
+      margin-bottom:1.25rem;
+    }
+    .offer-price .from { font-size:.8rem; color:var(--grey); }
+    .offer-price .amount { font-size:1.5rem; font-weight:900; color:var(--dark); }
+    .offer-price .unit { font-size:.8rem; color:var(--grey); }
+    .pricing-table { background:var(--off-white); border-radius:var(--radius-lg); overflow:hidden; margin-top:3rem; }
+    .pricing-row {
+      display:grid; grid-template-columns:2fr 1fr 1fr 1fr;
+      border-bottom:1px solid var(--border);
+    }
+    .pricing-row:last-child { border-bottom:none; }
+    .pricing-cell {
+      padding:1rem 1.25rem;
+      font-size:.875rem;
+      display:flex; align-items:center;
+    }
+    .pricing-row.head .pricing-cell {
+      font-weight:700; font-size:.8rem; text-transform:uppercase;
+      letter-spacing:1px; color:var(--grey); background:var(--white);
+      border-bottom:2px solid var(--border);
+    }
+    .pricing-row.head .pricing-cell:nth-child(3) { background:var(--violet); color:var(--white); }
+    .check-yes { color:var(--success); font-size:1rem; }
+    .check-no  { color:var(--border); font-size:1rem; }
+    @media(max-width:768px){ .offer-grid{grid-template-columns:1fr;} .pricing-table{overflow-x:auto;} }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="/index.html" class="nav-logo">Webdesign<span> &amp; Co</span></a>
+    <ul class="nav-menu">
+      <li><a href="/services.html" class="nav-link active">Services</a></li>
+      <li><a href="/a-propos.html" class="nav-link">À propos</a></li>
+      <li><a href="/a-propos.html#dubai" class="nav-link">🇦🇪 Dubai</a></li>
+      <li><a href="/contact.html" class="nav-link">Contact</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="/audit-digital-gratuit.html" class="btn btn-primary">Audit gratuit →</a>
+      <button class="nav-burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</nav>
+
+<nav class="nav-mobile">
+  <button class="nav-mobile-close">✕</button>
+  <a href="/services.html">Services</a>
+  <a href="/a-propos.html">À propos</a>
+  <a href="/contact.html">Contact</a>
+  <a href="/audit-digital-gratuit.html" class="btn btn-primary btn-lg">Audit gratuit →</a>
+</nav>
+
+<main>
+<section class="page-hero">
+  <div class="page-hero-bg" aria-hidden="true"></div>
+  <div class="container page-hero-content">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+      <a href="/index.html">Accueil</a>
+      <span>/</span>
+      <span>Services</span>
+    </nav>
+    <span class="section-label white">Nos expertises</span>
+    <h1>Des solutions digitales<br />pensées pour votre croissance</h1>
+    <p>Création de site, branding, SEO, réseaux sociaux — tout ce dont votre PME a besoin pour dominer en ligne, de France à Dubai.</p>
+  </div>
+</section>
+
+<!-- OFFRES DÉTAILLÉES -->
+<section class="section">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label">Nos services</span>
+      <h2 class="section-title">Ce que nous créons pour vous</h2>
+      <p class="section-sub">Chaque service est livré clé en main, avec suivi et support inclus.</p>
+    </div>
+
+    <div class="offer-grid">
+
+      <div class="offer-card">
+        <div class="offer-card-head">
+          <div class="offer-icon">🌐</div>
+          <h3>Création de site web</h3>
+          <p>Sites performants, mobiles, optimisés SEO et conversion — livrés en 3 à 6 semaines.</p>
+        </div>
+        <div class="offer-card-body">
+          <ul class="offer-features">
+            <li class="offer-feature"><span class="check">✓</span> Design sur mesure (pas de template)</li>
+            <li class="offer-feature"><span class="check">✓</span> Mobile-first &amp; responsive</li>
+            <li class="offer-feature"><span class="check">✓</span> Vitesse de chargement optimisée</li>
+            <li class="offer-feature"><span class="check">✓</span> SEO technique intégré</li>
+            <li class="offer-feature"><span class="check">✓</span> Formulaires &amp; CTA conversion</li>
+            <li class="offer-feature"><span class="check">✓</span> Formation CMS incluse</li>
+          </ul>
+          <div class="offer-price">
+            <span class="from">À partir de</span>
+            <span class="amount">1 500 €</span>
+            <span class="unit">— délai 3-6 semaines</span>
+          </div>
+          <a href="/contact.html" class="btn btn-primary" style="width:100%;justify-content:center">Demander un devis →</a>
+        </div>
+      </div>
+
+      <div class="offer-card">
+        <div class="offer-card-head">
+          <div class="offer-icon">🏆</div>
+          <h3>Identité visuelle & Branding</h3>
+          <p>Votre image de marque professionnelle, cohérente et mémorable.</p>
+        </div>
+        <div class="offer-card-body">
+          <ul class="offer-features">
+            <li class="offer-feature"><span class="check">✓</span> Logo (3 propositions + retouches)</li>
+            <li class="offer-feature"><span class="check">✓</span> Charte graphique complète</li>
+            <li class="offer-feature"><span class="check">✓</span> Palette couleurs + typographies</li>
+            <li class="offer-feature"><span class="check">✓</span> Templates réseaux sociaux</li>
+            <li class="offer-feature"><span class="check">✓</span> Supports print (carte, en-tête)</li>
+            <li class="offer-feature"><span class="check">✓</span> Fichiers sources livrés (AI, PDF)</li>
+          </ul>
+          <div class="offer-price">
+            <span class="from">À partir de</span>
+            <span class="amount">800 €</span>
+            <span class="unit">— délai 2-3 semaines</span>
+          </div>
+          <a href="/contact.html" class="btn btn-primary" style="width:100%;justify-content:center">Demander un devis →</a>
+        </div>
+      </div>
+
+      <div class="offer-card">
+        <div class="offer-card-head">
+          <div class="offer-icon">🔍</div>
+          <h3>SEO & Référencement</h3>
+          <p>Page 1 Google sur vos mots-clés cibles — France, Dubai, Afrique.</p>
+        </div>
+        <div class="offer-card-body">
+          <ul class="offer-features">
+            <li class="offer-feature"><span class="check">✓</span> Audit SEO complet (baseline)</li>
+            <li class="offer-feature"><span class="check">✓</span> Recherche de mots-clés</li>
+            <li class="offer-feature"><span class="check">✓</span> Optimisation on-page</li>
+            <li class="offer-feature"><span class="check">✓</span> Création de contenu SEO</li>
+            <li class="offer-feature"><span class="check">✓</span> Netlinking &amp; autorité domaine</li>
+            <li class="offer-feature"><span class="check">✓</span> Reporting mensuel détaillé</li>
+          </ul>
+          <div class="offer-price">
+            <span class="from">À partir de</span>
+            <span class="amount">490 €</span>
+            <span class="unit">/ mois — engagement 3 mois</span>
+          </div>
+          <a href="/contact.html" class="btn btn-primary" style="width:100%;justify-content:center">Demander un devis →</a>
+        </div>
+      </div>
+
+      <div class="offer-card">
+        <div class="offer-card-head">
+          <div class="offer-icon">📱</div>
+          <h3>Community Management</h3>
+          <p>Votre présence social media gérée par des experts — croissance garantie.</p>
+        </div>
+        <div class="offer-card-body">
+          <ul class="offer-features">
+            <li class="offer-feature"><span class="check">✓</span> Stratégie éditoriale sur mesure</li>
+            <li class="offer-feature"><span class="check">✓</span> 3 réseaux : TikTok / LinkedIn / Instagram</li>
+            <li class="offer-feature"><span class="check">✓</span> Création de contenu (visuels + textes)</li>
+            <li class="offer-feature"><span class="check">✓</span> 15 à 22 posts/mois</li>
+            <li class="offer-feature"><span class="check">✓</span> Gestion des commentaires</li>
+            <li class="offer-feature"><span class="check">✓</span> Reporting mensuel + KPIs</li>
+          </ul>
+          <div class="offer-price">
+            <span class="from">À partir de</span>
+            <span class="amount">690 €</span>
+            <span class="unit">/ mois</span>
+          </div>
+          <a href="/contact.html" class="btn btn-primary" style="width:100%;justify-content:center">Demander un devis →</a>
+        </div>
+      </div>
+
+      <div class="offer-card">
+        <div class="offer-card-head">
+          <div class="offer-icon">🛒</div>
+          <h3>E-commerce</h3>
+          <p>Boutique en ligne qui convertit — Shopify, WooCommerce, sur-mesure.</p>
+        </div>
+        <div class="offer-card-body">
+          <ul class="offer-features">
+            <li class="offer-feature"><span class="check">✓</span> Design premium (pas de thème générique)</li>
+            <li class="offer-feature"><span class="check">✓</span> Configuration paiement sécurisé</li>
+            <li class="offer-feature"><span class="check">✓</span> Fiches produits optimisées SEO</li>
+            <li class="offer-feature"><span class="check">✓</span> Tunnel de vente optimisé</li>
+            <li class="offer-feature"><span class="check">✓</span> Intégration logistique/livraison</li>
+            <li class="offer-feature"><span class="check">✓</span> Formation &amp; accompagnement</li>
+          </ul>
+          <div class="offer-price">
+            <span class="from">À partir de</span>
+            <span class="amount">2 500 €</span>
+            <span class="unit">— délai 4-8 semaines</span>
+          </div>
+          <a href="/contact.html" class="btn btn-primary" style="width:100%;justify-content:center">Demander un devis →</a>
+        </div>
+      </div>
+
+      <div class="offer-card">
+        <div class="offer-card-head" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)">
+          <div class="offer-icon">🇦🇪</div>
+          <h3>Pack Dubai & Golfe</h3>
+          <p>Développez votre activité aux Émirats. Stratégie, digital et réseau local.</p>
+        </div>
+        <div class="offer-card-body">
+          <ul class="offer-features">
+            <li class="offer-feature"><span class="check">✓</span> Audit marché Dubai</li>
+            <li class="offer-feature"><span class="check">✓</span> Adaptation identité bilingue FR/EN</li>
+            <li class="offer-feature"><span class="check">✓</span> Site web version Golfe</li>
+            <li class="offer-feature"><span class="check">✓</span> Stratégie réseaux sociaux UAE</li>
+            <li class="offer-feature"><span class="check">✓</span> Introduction réseau partenaires Dubai</li>
+            <li class="offer-feature"><span class="check">✓</span> Accompagnement 6 mois</li>
+          </ul>
+          <div class="offer-price">
+            <span class="from">À partir de</span>
+            <span class="amount">3 500 €</span>
+            <span class="unit">— pack complet</span>
+          </div>
+          <a href="/contact.html" class="btn btn-primary" style="width:100%;justify-content:center">Demander un devis →</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section-grey">
+  <div class="container text-center">
+    <span class="section-label">FAQ</span>
+    <h2 class="section-title">Questions fréquentes</h2>
+    <p class="section-sub">Tout ce que vous voulez savoir avant de commencer.</p>
+
+    <div class="faq-list" style="text-align:left;margin-top:2rem">
+
+      <div class="faq-item">
+        <button class="faq-question">Combien de temps dure un projet de site web ?<div class="faq-chevron">▼</div></button>
+        <div class="faq-answer"><p>Un site vitrine prend 3 à 4 semaines. Un site complexe ou e-commerce 6 à 10 semaines. Nous définissons un calendrier précis dès le démarrage et le respectons.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">Travaillez-vous avec des PME de tous secteurs ?<div class="faq-chevron">▼</div></button>
+        <div class="faq-answer"><p>Oui — immobilier, restauration, conseil, santé, beauté, BTP, e-commerce, coaching… Notre seule condition : votre sérieux et votre volonté de croissance.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">L'audit digital gratuit engage-t-il à quelque chose ?<div class="faq-chevron">▼</div></button>
+        <div class="faq-answer"><p>Absolument pas. L'audit est 100% gratuit et sans engagement. Vous recevez votre rapport, vous décidez de la suite. Même si vous ne nous confiez aucun projet, le rapport vous appartient.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">Pouvez-vous gérer un client basé en France et à Dubai simultanément ?<div class="faq-chevron">▼</div></button>
+        <div class="faq-answer"><p>C'est exactement ce que nous faisons. Notre équipe est présente en France et à Dubai — nous couvrons les deux marchés avec une seule interlocutrice francophone.</p></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">Quels sont vos délais de réponse ?<div class="faq-chevron">▼</div></button>
+        <div class="faq-answer"><p>Nous garantissons une réponse sous 24h pour tout contact entrant. En urgence, WhatsApp permet une réponse en moins de 2h pendant nos horaires d'ouverture (7j/7).</p></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-band">
+  <div class="container">
+    <h2>Prêt à passer à l'étape suivante ?</h2>
+    <p>Commencez par un audit gratuit. Aucune obligation, résultat garanti sous 24h.</p>
+    <div class="cta-actions">
+      <a href="/audit-digital-gratuit.html" class="btn btn-white btn-lg">Audit gratuit →</a>
+      <a href="/contact.html" class="btn btn-ghost btn-lg">Demander un devis</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">Webdesign<span> &amp; Co</span></div>
+        <p class="footer-desc">Agence digitale franco-émiratie. PME France, Afrique francophone et Dubai.</p>
+        <div class="footer-social">
+          <a href="#" class="footer-social-link">in</a>
+          <a href="#" class="footer-social-link">ig</a>
+          <a href="#" class="footer-social-link">tk</a>
+          <a href="#" class="footer-social-link">wa</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Services</div>
+        <ul class="footer-links">
+          <li><a href="/services.html" class="footer-link">Création de site web</a></li>
+          <li><a href="/services.html" class="footer-link">Identité visuelle</a></li>
+          <li><a href="/services.html" class="footer-link">SEO</a></li>
+          <li><a href="/services.html" class="footer-link">Réseaux sociaux</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Agence</div>
+        <ul class="footer-links">
+          <li><a href="/a-propos.html" class="footer-link">À propos</a></li>
+          <li><a href="/contact.html" class="footer-link">Contact</a></li>
+          <li><a href="/audit-digital-gratuit.html" class="footer-link">Audit gratuit</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Contact</div>
+        <ul class="footer-links">
+          <li><a href="mailto:contact@webdesignandco.org" class="footer-link">contact@webdesignandco.org</a></li>
+          <li><span class="footer-link">🇫🇷 Paris · 🇦🇪 Dubai</span></li>
+          <li><span class="footer-link">Support 7j/7</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 Webdesign &amp; Co</span>
+      <span class="footer-flags">🇫🇷 🇦🇪 🌍</span>
+    </div>
+  </div>
+</footer>
+
+<a href="https://wa.me/message/WEBDESIGNANDCO" class="wa-float" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+</a>
+<script src="js/main.js" defer></script>
+</body>
+</html>

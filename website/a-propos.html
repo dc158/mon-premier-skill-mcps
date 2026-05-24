@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>À propos — Claire Chali & Webdesign & Co | Agence Franco-Émiratie</title>
+  <meta name="description" content="Découvrez Webdesign & Co, fondée par Claire Chali. Agence digitale franco-émiratie accompagnant les PME francophones en France, Afrique et Dubai depuis des années." />
+  <link rel="canonical" href="https://webdesignandco.org/a-propos/" />
+  <meta property="og:title"       content="À propos | Webdesign & Co" />
+  <meta property="og:description" content="Fondée par Claire Chali. L'agence digitale des PME francophones, de Paris à Dubai." />
+  <meta property="og:image"       content="https://webdesignandco.org/og-about.jpg" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    .values-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; }
+    .value-card {
+      background:var(--white);
+      border:1.5px solid var(--border);
+      border-radius:var(--radius-lg);
+      padding:2rem;
+      transition:var(--transition);
+    }
+    .value-card:hover { border-color:var(--violet); box-shadow:var(--shadow); transform:translateY(-3px); }
+    .value-icon { font-size:2rem; margin-bottom:1rem; }
+    .value-card h3 { margin-bottom:.5rem; }
+    .value-card p { font-size:.9rem; }
+    .founder-section { display:grid; grid-template-columns:1fr 1fr; gap:5rem; align-items:center; }
+    .founder-photo {
+      aspect-ratio:4/5;
+      background:linear-gradient(135deg, var(--violet) 0%, var(--violet-dark) 100%);
+      border-radius:var(--radius-lg);
+      display:flex; align-items:center; justify-content:center;
+      color:var(--white); font-size:5rem;
+      position:relative; overflow:hidden;
+    }
+    .founder-photo::before {
+      content:'';
+      position:absolute; inset:0;
+      background:radial-gradient(ellipse at 30% 70%, rgba(255,255,255,.1) 0%, transparent 60%);
+    }
+    .founder-badge {
+      position:absolute;
+      bottom:1.5rem; left:1.5rem; right:1.5rem;
+      background:rgba(0,0,0,.6);
+      backdrop-filter:blur(8px);
+      border-radius:var(--radius-sm);
+      padding:.75rem 1rem;
+      color:var(--white);
+      font-size:.85rem; font-weight:700;
+    }
+    .founder-content blockquote {
+      border-left:3px solid var(--violet);
+      padding:1.25rem 1.5rem;
+      background:var(--violet-pale);
+      border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+      font-style:italic;
+      font-size:1rem;
+      color:var(--dark);
+      margin:2rem 0;
+    }
+    .timeline { position:relative; max-width:600px; }
+    .timeline::before {
+      content:'';
+      position:absolute;
+      left:19px; top:0; bottom:0;
+      width:2px;
+      background:linear-gradient(to bottom, var(--violet), var(--violet-light));
+    }
+    .timeline-item { display:flex; gap:1.5rem; margin-bottom:2rem; }
+    .timeline-dot {
+      width:40px; height:40px;
+      background:var(--violet);
+      border-radius:50%;
+      flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      color:var(--white); font-size:.8rem; font-weight:800;
+      position:relative; z-index:1;
+    }
+    .timeline-item h3 { font-size:1rem; margin-bottom:.3rem; }
+    .timeline-item p { font-size:.875rem; }
+    @media(max-width:768px){
+      .founder-section{grid-template-columns:1fr}
+      .values-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="/index.html" class="nav-logo">Webdesign<span> &amp; Co</span></a>
+    <ul class="nav-menu">
+      <li><a href="/services.html" class="nav-link">Services</a></li>
+      <li><a href="/a-propos.html" class="nav-link active">À propos</a></li>
+      <li><a href="/a-propos.html#dubai" class="nav-link">🇦🇪 Dubai</a></li>
+      <li><a href="/contact.html" class="nav-link">Contact</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="/audit-digital-gratuit.html" class="btn btn-primary">Audit gratuit →</a>
+      <button class="nav-burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</nav>
+<nav class="nav-mobile">
+  <button class="nav-mobile-close">✕</button>
+  <a href="/services.html">Services</a>
+  <a href="/a-propos.html">À propos</a>
+  <a href="/contact.html">Contact</a>
+  <a href="/audit-digital-gratuit.html" class="btn btn-primary btn-lg">Audit gratuit →</a>
+</nav>
+
+<main>
+<section class="page-hero">
+  <div class="page-hero-bg" aria-hidden="true"></div>
+  <div class="container page-hero-content">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+      <a href="/index.html">Accueil</a><span>/</span><span>À propos</span>
+    </nav>
+    <span class="section-label white">Notre histoire</span>
+    <h1>L'agence née entre<br />Paris et Dubai</h1>
+    <p>Webdesign &amp; Co, c'est l'histoire d'une conviction : les PME francophones méritent une présence digitale aussi premium que les grandes marques — sans s'y ruiner.</p>
+  </div>
+</section>
+
+<!-- FONDATRICE -->
+<section class="section" id="equipe">
+  <div class="container founder-section">
+    <div class="founder-photo">
+      <span aria-hidden="true">CC</span>
+      <div class="founder-badge">Claire Chali — Fondatrice &amp; CEO 🇫🇷🇦🇪</div>
+    </div>
+    <div class="founder-content">
+      <span class="section-label">Fondatrice</span>
+      <h2>Claire Chali</h2>
+      <p class="lead" style="color:var(--dark);margin:1rem 0">CEO &amp; Directrice Créative — Paris · Dubai</p>
+      <blockquote>
+        « J'ai vu trop de PME brillantes perdre des clients parce que leur présence digitale ne reflétait pas leur valeur réelle. C'est pour changer ça que j'ai fondé Webdesign &amp; Co. »
+      </blockquote>
+      <p style="margin-bottom:1rem">Après des années à travailler dans le digital en France puis à Dubai, Claire a fondé Webdesign &amp; Co avec une mission claire : démocratiser l'accès à un digital premium pour les PME francophones, où qu'elles soient dans le monde.</p>
+      <p>Sa double culture franco-émiratie est l'atout unique de l'agence. Elle comprend les codes des deux marchés, les attentes des clients premium du Golfe, et les contraintes réelles des entrepreneurs français.</p>
+      <div style="display:flex;gap:.75rem;margin-top:2rem;flex-wrap:wrap">
+        <a href="https://www.linkedin.com/in/clairechali" class="btn btn-outline" target="_blank" rel="noopener">LinkedIn →</a>
+        <a href="/contact.html" class="btn btn-primary">Prendre rendez-vous →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VALEURS -->
+<section class="section section-grey">
+  <div class="container">
+    <div class="text-center">
+      <span class="section-label">Nos valeurs</span>
+      <h2 class="section-title">Ce qui nous guide chaque jour</h2>
+      <p class="section-sub">Pas des mots. Des engagements concrets envers chaque client.</p>
+    </div>
+    <div class="values-grid">
+      <div class="value-card">
+        <div class="value-icon">🎯</div>
+        <h3>Résultats mesurables</h3>
+        <p>Pas de belles paroles. Chaque intervention est trackée : trafic, leads, conversions. Vous voyez le ROI.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">💎</div>
+        <h3>Premium accessible</h3>
+        <p>Qualité luxury, prix PME. Parce qu'une belle image ne devrait pas être réservée aux grandes entreprises.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">🤝</div>
+        <h3>Partenariat long terme</h3>
+        <p>Nous ne livrons pas et disparaissons. Support 7j/7, suivi mensuel, évolution continue de votre digital.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">🌍</div>
+        <h3>Vision internationale</h3>
+        <p>France, Afrique, Dubai — nous pensons vos marchés à l'échelle francophone mondiale, pas locale.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">⚡</div>
+        <h3>Réactivité totale</h3>
+        <p>Réponse garantie en 24h. Urgences traitées via WhatsApp en moins de 2h. Votre business n'attend pas.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">🔬</div>
+        <h3>Expertise data-driven</h3>
+        <p>Chaque décision s'appuie sur des données réelles : analytics, A/B tests, veille concurrentielle.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DUBAI -->
+<section class="section dubai-section" id="dubai">
+  <div class="dubai-bg" aria-hidden="true"></div>
+  <div class="container">
+    <div class="text-center" style="position:relative;z-index:1;margin-bottom:3rem">
+      <span class="section-label white">Expertise Dubai</span>
+      <h2 style="color:var(--white)">Pourquoi Dubai change tout<br />pour votre business</h2>
+      <p style="color:rgba(255,255,255,.7);max-width:560px;margin:0 auto">Dubai n'est pas juste un bureau supplémentaire. C'est l'accès à un écosystème économique unique, francophone, et ultra-connecté.</p>
+    </div>
+    <div class="timeline" style="margin:0 auto;position:relative;z-index:1">
+      <div class="timeline-item">
+        <div class="timeline-dot">1</div>
+        <div>
+          <h3 style="color:var(--white)">Marché premium à fort pouvoir d'achat</h3>
+          <p style="color:rgba(255,255,255,.6)">Dubai concentre parmi les plus forts revenus par habitant au monde. Vos services premium y trouvent leur marché naturel.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot">2</div>
+        <div>
+          <h3 style="color:var(--white)">600 000+ francophones résidents</h3>
+          <p style="color:rgba(255,255,255,.6)">Une diaspora francophone active, entrepreneuriale, qui cherche des partenaires qui comprennent leur culture.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot">3</div>
+        <div>
+          <h3 style="color:var(--white)">Hub stratégique Afrique-Europe-Asie</h3>
+          <p style="color:rgba(255,255,255,.6)">Dubai est le carrefour parfait pour développer une activité qui touche l'Afrique francophone, l'Europe et l'Asie depuis un seul point.</p>
+        </div>
+      </div>
+      <div class="timeline-item" style="margin-bottom:0">
+        <div class="timeline-dot">4</div>
+        <div>
+          <h3 style="color:var(--white)">Webdesign &amp; Co — votre guide local</h3>
+          <p style="color:rgba(255,255,255,.6)">Notre ancrage réel à Dubai (pas un bureau virtuel) vous ouvre les portes d'un réseau qualifié et d'une expertise terrain irremplaçable.</p>
+        </div>
+      </div>
+    </div>
+    <div class="text-center" style="margin-top:3rem;position:relative;z-index:1">
+      <a href="/contact.html" class="btn btn-primary btn-lg">Parler de votre projet Dubai →</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-band">
+  <div class="container">
+    <h2>Travaillons ensemble</h2>
+    <p>Un audit gratuit, sans engagement, pour commencer.</p>
+    <div class="cta-actions">
+      <a href="/audit-digital-gratuit.html" class="btn btn-white btn-lg">Audit gratuit →</a>
+      <a href="/contact.html" class="btn btn-ghost btn-lg">Nous contacter</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">Webdesign<span> &amp; Co</span></div>
+        <p class="footer-desc">Agence digitale franco-émiratie. PME France, Afrique francophone et Dubai.</p>
+        <div class="footer-social">
+          <a href="#" class="footer-social-link">in</a>
+          <a href="#" class="footer-social-link">ig</a>
+          <a href="#" class="footer-social-link">tk</a>
+          <a href="#" class="footer-social-link">wa</a>
+        </div>
+      </div>
+      <div><div class="footer-col-title">Services</div><ul class="footer-links"><li><a href="/services.html" class="footer-link">Création de site web</a></li><li><a href="/services.html" class="footer-link">SEO</a></li><li><a href="/services.html" class="footer-link">Branding</a></li></ul></div>
+      <div><div class="footer-col-title">Agence</div><ul class="footer-links"><li><a href="/a-propos.html" class="footer-link">À propos</a></li><li><a href="/contact.html" class="footer-link">Contact</a></li><li><a href="/audit-digital-gratuit.html" class="footer-link">Audit gratuit</a></li></ul></div>
+      <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:contact@webdesignandco.org" class="footer-link">contact@webdesignandco.org</a></li><li><span class="footer-link">🇫🇷 Paris · 🇦🇪 Dubai</span></li></ul></div>
+    </div>
+    <div class="footer-bottom"><span>© 2025 Webdesign &amp; Co</span><span class="footer-flags">🇫🇷 🇦🇪 🌍</span></div>
+  </div>
+</footer>
+<a href="https://wa.me/message/WEBDESIGNANDCO" class="wa-float" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></a>
+<script src="js/main.js" defer></script>
+</body>
+</html>
