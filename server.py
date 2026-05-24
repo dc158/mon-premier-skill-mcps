@@ -756,6 +756,357 @@ def suggerer_hashtags(sujet: str, reseau: str, marche: str = "france", nb_hashta
 
 
 @mcp.tool()
+def generer_script_audit_tiktok(
+    marche: str = "france",
+    angle: str = "site_web",
+    duree: int = 60,
+) -> str:
+    """
+    Génère un script TikTok/Reels 'Audit 60 sec' prêt à filmer pour Webdesign & Co.
+    Intègre le mot-clé AUDIT pour ManyChat automation.
+    marche : 'france' ou 'dubai'.
+    angle : 'site_web', 'reseaux_sociaux', 'identite_visuelle', 'seo', 'ecommerce'.
+    duree : durée cible en secondes (30, 45 ou 60).
+    """
+    marche = marche.lower()
+    if marche not in MARCHES:
+        return json.dumps({"erreur": "Marché inconnu. Utilisez 'france' ou 'dubai'."}, ensure_ascii=False)
+
+    drapeau = MARCHES[marche]["emoji_drapeau"]
+
+    angles = {
+        "site_web": {
+            "titre": "Audit de site web",
+            "hook": "Votre site web fait FUIR vos clients sans que vous le sachiez.",
+            "probleme": "80% des PME {marche} perdent des clients à cause d'un site lent, mal conçu ou pas mobile.",
+            "preuve": "Un site qui met +3 secondes à charger = 53% des visiteurs qui partent. Pour de bon.",
+            "solution": "En 60 secondes, je peux identifier les 3 erreurs qui vous coûtent des clients chaque jour.",
+            "cta_verbal": "Commentez AUDIT sous cette vidéo — vous recevez votre diagnostic gratuit en 24h.",
+        },
+        "reseaux_sociaux": {
+            "titre": "Audit réseaux sociaux",
+            "hook": "Vous postez chaque semaine et personne ne vous voit. Voilà pourquoi.",
+            "probleme": "Poster sans stratégie en {marche}, c'est comme crier dans le désert. Le contenu seul ne suffit plus.",
+            "preuve": "L'algorithme favorise la cohérence, le bon format et les bons horaires. Sans ça : 0 portée.",
+            "solution": "Je scanne votre présence sociale en 60 secondes et j'identifie ce qui bloque votre croissance.",
+            "cta_verbal": "Tapez AUDIT en commentaire — audit de vos réseaux offert, sans engagement.",
+        },
+        "identite_visuelle": {
+            "titre": "Audit identité visuelle",
+            "hook": "Votre logo fait fuir des clients premium avant même qu'ils vous lisent.",
+            "probleme": "En {marche}, le premier jugement se fait en 0,05 seconde. Une image amateur = client perdu.",
+            "preuve": "Les entreprises avec une identité visuelle cohérente génèrent 33% de revenus en plus.",
+            "solution": "Audit de votre image de marque en 60 secondes : logo, couleurs, cohérence, impact premium.",
+            "cta_verbal": "Commentez AUDIT pour recevoir votre analyse visuelle gratuite — directement en DM.",
+        },
+        "seo": {
+            "titre": "Audit SEO",
+            "hook": "Vos concurrents apparaissent sur Google. Pas vous. Voici pourquoi.",
+            "probleme": "93% des expériences en ligne commencent sur Google. Si vous n'êtes pas en page 1 en {marche}, vous n'existez pas.",
+            "preuve": "Les 3 premiers résultats Google captent 75% des clics. La page 2 : quasi zéro trafic.",
+            "solution": "J'analyse votre positionnement SEO en 60 secondes et vous donne les 3 actions prioritaires.",
+            "cta_verbal": "Tapez AUDIT — vous recevez votre rapport SEO gratuit avec les mots-clés à cibler.",
+        },
+        "ecommerce": {
+            "titre": "Audit e-commerce",
+            "hook": "Votre boutique en ligne reçoit des visites mais ne vend pas. C'est réparable.",
+            "probleme": "Le taux de conversion moyen d'un e-commerce est de 2%. En dessous ? Vous perdez de l'argent chaque jour.",
+            "preuve": "Tunnel de vente mal optimisé, photos pauvres, absence de preuve sociale = panier abandonné.",
+            "solution": "Audit complet de votre boutique en 60 secondes : UX, tunnel, confiance, conversion.",
+            "cta_verbal": "Commentez AUDIT pour votre diagnostic e-commerce offert — réponse sous 24h.",
+        },
+    }
+
+    a = angles.get(angle, angles["site_web"])
+    probleme = a["probleme"].replace("{marche}", "France" if marche == "france" else "Dubai")
+
+    timings = {
+        30: {"hook": "0-2s", "probleme": "2-12s", "preuve": "12-22s", "solution": "22-27s", "cta": "27-30s"},
+        45: {"hook": "0-3s", "probleme": "3-18s", "preuve": "18-33s", "solution": "33-40s", "cta": "40-45s"},
+        60: {"hook": "0-3s", "probleme": "3-20s", "preuve": "20-38s", "solution": "38-50s", "cta": "50-60s"},
+    }
+    t = timings.get(duree, timings[60])
+
+    hashtags_audit = {
+        "france": "#AuditGratuit #PMEFrance #WebdesignAndCo #AgenceWeb #ConseilDigital #MarketingFrance #TipsEntrepreneur",
+        "dubai": "#AuditGratuit #PMEDubai #WebdesignAndCo #AgenceWebDubai #FrancophonesDubai #DigitalDubai #EntrepreneurDubai",
+    }
+
+    script = (
+        f"🎬 SCRIPT TIKTOK/REELS — {a['titre'].upper()} 60 SEC\n"
+        f"Webdesign & Co {drapeau} | Mot-clé ManyChat : AUDIT\n"
+        f"{'='*55}\n\n"
+        f"⏱️ DURÉE : {duree} secondes | FORMAT : Vertical 9:16\n"
+        f"🎥 DÉCOR CONSEILLÉ : Bureau pro / fond violet #7B2FFF / mockup laptop\n\n"
+        f"━━━ [{t['hook']}] HOOK ━━━\n"
+        f"(Texte à l'écran + voix) :\n"
+        f'« {a["hook"]} »\n\n'
+        f"━━━ [{t['probleme']}] PROBLÈME ━━━\n"
+        f"(Voix off / face caméra) :\n"
+        f'« {probleme} »\n\n'
+        f"━━━ [{t['preuve']}] PREUVE / CHIFFRE ━━━\n"
+        f"(Texte animé à l'écran + voix) :\n"
+        f'« {a["preuve"]} »\n\n'
+        f"━━━ [{t['solution']}] SOLUTION WEBDESIGN & CO ━━━\n"
+        f"(Face caméra, ton direct) :\n"
+        f'« {a["solution"]} »\n\n'
+        f"━━━ [{t['cta']}] CALL TO ACTION MANYCHAT ━━━\n"
+        f"(Texte GRAND à l'écran + voix forte) :\n"
+        f'« {a["cta_verbal"]} »\n\n'
+        f"📌 TEXTE ÉPINGLÉ EN COMMENTAIRE :\n"
+        f"Tapez AUDIT pour recevoir votre diagnostic offert par Webdesign & Co {drapeau}\n\n"
+        f"🔧 CONFIG MANYCHAT :\n"
+        f"   Déclencheur  : Commentaire contient « AUDIT » (insensible à la casse)\n"
+        f"   Réponse auto : DM avec lien vers formulaire d'audit\n"
+        f"   Délai        : Immédiat (réponse < 1 min)\n"
+        f"   Message DM   : « Bonjour ! Votre audit {a['titre']} est en cours de préparation. Réponse sous 24h. — Webdesign & Co {drapeau} »\n\n"
+        f"#️⃣ HASHTAGS :\n{hashtags_audit[marche]}\n\n"
+        f"{'='*55}\n"
+        f"✅ Script validé — Filmez, montez, publiez. ManyChat fait le reste."
+    )
+    return script
+
+
+# ─────────────────────────────────────────────
+# DONNÉES CONCURRENCE FRANCOPHONE
+# ─────────────────────────────────────────────
+
+CONCURRENTS_DATA = {
+    "eskimoz": {
+        "nom": "Eskimoz",
+        "pays": "France",
+        "positionnement": "Agence SEO & SEM premium, grande entreprise",
+        "forces": ["Forte notoriété SEO", "Blog technique très riche", "Clients grands comptes"],
+        "failles": [
+            "Trop technique, inaccessible aux PME",
+            "Aucune présence Dubai / Moyen-Orient",
+            "Tarifs enterprise uniquement (>5K€/mois)",
+            "Peu de contenu social media / TikTok",
+            "Pas de positionnement francophone international",
+        ],
+        "accroche_type": "Boostez votre trafic organique",
+        "reseaux_forts": ["LinkedIn", "Blog"],
+        "angle_contre": "Nous sommes l'agence SEO + design ACCESSIBLE aux PME, avec la dimension Dubai en bonus.",
+    },
+    "junto": {
+        "nom": "Junto",
+        "pays": "France",
+        "positionnement": "Performance marketing & acquisition payante",
+        "forces": ["Expertise Google Ads / Meta Ads", "Data-driven", "Résultats mesurables"],
+        "failles": [
+            "Zéro création de marque ou design",
+            "Pas de stratégie organique / content",
+            "Uniquement performance, pas de storytelling",
+            "Audience limitée France uniquement",
+            "Aucune offre PME africaine ou Dubai",
+        ],
+        "accroche_type": "Maximisez votre ROI publicitaire",
+        "reseaux_forts": ["LinkedIn"],
+        "angle_contre": "Nous combinons performance ET branding — la pub qui convertit grâce à une image qui inspire confiance.",
+    },
+    "linkeo": {
+        "nom": "Linkeo",
+        "pays": "France",
+        "positionnement": "Création de site web pour TPE/PME, volume",
+        "forces": ["Prix d'entrée bas", "Large réseau commercial", "Cible PME"],
+        "failles": [
+            "Templates génériques, aucune différenciation",
+            "Contrat longue durée contraignant",
+            "Support client médiocre (avis clients négatifs)",
+            "Pas de stratégie digitale globale",
+            "Image bas de gamme, pas premium",
+        ],
+        "accroche_type": "Votre site web en quelques jours",
+        "reseaux_forts": ["Google Ads"],
+        "angle_contre": "Nous créons des sites qui CONVERTISSENT, pas des vitrines génériques. Sur-mesure, premium, sans engagement abusif.",
+    },
+    "agence_boosteur": {
+        "nom": "Agence Boosteur",
+        "pays": "France/Afrique",
+        "positionnement": "Marketing digital pour entrepreneurs francophones",
+        "forces": ["Cible francophone", "Contenu pédagogique", "Prix accessibles"],
+        "failles": [
+            "Pas de présence Dubai / Golfe",
+            "Design moyen, pas premium",
+            "Faible autorité de domaine",
+            "Peu d'études de cas chiffrées",
+            "Pas d'expertise e-commerce avancée",
+        ],
+        "accroche_type": "Développez votre business en ligne",
+        "reseaux_forts": ["Instagram", "YouTube"],
+        "angle_contre": "Nous sommes francophones ET premium ET Dubai — la seule agence qui couvre France + Afrique + Golfe avec une image luxury.",
+    },
+    "webqam": {
+        "nom": "Webqam",
+        "pays": "France",
+        "positionnement": "Agence web & marketing digital, ETI/PME",
+        "forces": ["Expertise technique solide", "Portfolio varié", "Grenoble + Paris"],
+        "failles": [
+            "Aucune dimension internationale",
+            "Peu actif sur TikTok / réseaux modernes",
+            "Pas de positionnement niche / sectoriel clair",
+            "Pas d'offre francophone Afrique ou Dubai",
+            "Communication corporate froide",
+        ],
+        "accroche_type": "Votre partenaire digital de confiance",
+        "reseaux_forts": ["LinkedIn", "Blog"],
+        "angle_contre": "Nous avons la même expertise technique, mais avec un positionnement franco-émirati unique et une communication qui engage.",
+    },
+}
+
+
+@mcp.tool()
+def analyser_concurrence(concurrent: str = "tous", marche: str = "france") -> str:
+    """
+    Analyse concurrentielle intégrée des agences digitales francophones.
+    concurrent : 'eskimoz', 'junto', 'linkeo', 'agence_boosteur', 'webqam', ou 'tous'.
+    marche : 'france' ou 'dubai' (positionne l'analyse selon le marché cible).
+    """
+    marche = marche.lower()
+    drapeau = MARCHES.get(marche, MARCHES["france"])["emoji_drapeau"]
+
+    if concurrent != "tous" and concurrent not in CONCURRENTS_DATA:
+        connus = ", ".join(CONCURRENTS_DATA.keys())
+        return json.dumps({"erreur": f"Concurrent inconnu. Options : {connus}, tous"}, ensure_ascii=False)
+
+    cibles = CONCURRENTS_DATA if concurrent == "tous" else {concurrent: CONCURRENTS_DATA[concurrent]}
+
+    lignes = [
+        f"🔍 ANALYSE CONCURRENTIELLE — Webdesign & Co {drapeau}",
+        f"Marché cible : {marche.upper()} | {len(cibles)} concurrent(s) analysé(s)",
+        "=" * 60,
+        "",
+    ]
+
+    for slug, c in cibles.items():
+        lignes += [
+            f"🏢 {c['nom'].upper()} ({c['pays']})",
+            f"   Positionnement : {c['positionnement']}",
+            f"   Réseaux forts  : {', '.join(c['reseaux_forts'])}",
+            f"   Accroche type  : « {c['accroche_type']} »",
+            "",
+            f"   ✅ FORCES :",
+        ]
+        for f in c["forces"]:
+            lignes.append(f"      + {f}")
+        lignes += ["", f"   ⚠️  FAILLES À EXPLOITER :"]
+        for faille in c["failles"]:
+            lignes.append(f"      ✗ {faille}")
+        lignes += [
+            "",
+            f"   🎯 ANGLE WEBDESIGN & CO CONTRE {c['nom'].upper()} :",
+            f"      → {c['angle_contre']}",
+            "",
+            "─" * 60,
+            "",
+        ]
+
+    lignes += [
+        "🏆 AVANTAGES UNIQUES WEBDESIGN & CO — NON RÉPLICABLES :",
+        "   ① Seule agence francophone avec ancrage Dubai réel (Claire Chali)",
+        "   ② PME + premium : qualité luxury à prix PME",
+        "   ③ Coverage France + Afrique francophone + Golfe (3 marchés en 1)",
+        "   ④ Machine de contenu social : TikTok / LinkedIn / Instagram automatisés",
+        "   ⑤ Lead magnet audit offert : entrée à coût zéro pour le prospect",
+        "",
+        "📌 MESSAGE CLÉ À MARTELER (tous réseaux) :",
+        f'   « L\'agence digitale premium qui parle votre langue, de Paris à Dubai. » {drapeau}🇫🇷🇦🇪',
+    ]
+
+    return "\n".join(lignes)
+
+
+@mcp.tool()
+def generer_campagne_semaine(
+    marche: str = "france",
+    semaine_debut: str = "",
+    objectif: str = "leads",
+) -> str:
+    """
+    Génère la campagne complète d'une semaine : 3 posts LinkedIn + scripts TikTok + stratégie.
+    marche : 'france' ou 'dubai'.
+    semaine_debut : date JJ/MM/AAAA (optionnel, défaut = lundi prochain).
+    objectif : 'leads', 'notoriete' ou 'engagement'.
+    """
+    marche = marche.lower()
+    if marche not in MARCHES:
+        return json.dumps({"erreur": "Marché inconnu. Utilisez 'france' ou 'dubai'."}, ensure_ascii=False)
+
+    if semaine_debut:
+        try:
+            debut = datetime.strptime(semaine_debut, "%d/%m/%Y")
+        except ValueError:
+            return json.dumps({"erreur": "Format de date invalide. Utilisez JJ/MM/AAAA."}, ensure_ascii=False)
+    else:
+        aujourd_hui = datetime.now()
+        jours_jusqu_lundi = (7 - aujourd_hui.weekday()) % 7 or 7
+        debut = aujourd_hui + timedelta(days=jours_jusqu_lundi)
+
+    drapeau = MARCHES[marche]["emoji_drapeau"]
+    sujets_28 = SUJETS_FRANCE_28 if marche == "france" else SUJETS_DUBAI_28
+    jour = debut.timetuple().tm_yday
+
+    # 3 sujets LinkedIn distincts sur la semaine
+    sujets_linkedin = [
+        sujets_28[(jour + i * 9) % len(sujets_28)] for i in range(3)
+    ]
+    # 2 angles TikTok Audit
+    angles_tiktok = ["site_web", "reseaux_sociaux"]
+
+    cta_objectif = {
+        "leads": "📩 Commentez AUDIT pour votre diagnostic gratuit.",
+        "notoriete": "♻️ Partagez si cela peut aider un entrepreneur de votre réseau.",
+        "engagement": "💬 Quel est votre plus grand défi digital en ce moment ?",
+    }
+    cta = cta_objectif.get(objectif, cta_objectif["leads"])
+
+    lignes = [
+        f"📅 CAMPAGNE SEMAINE — Webdesign & Co {drapeau} {marche.upper()}",
+        f"Du {debut.strftime('%d/%m/%Y')} — Objectif : {objectif.upper()}",
+        "=" * 60,
+        "",
+        "━━━ LUNDI — POST LINKEDIN #1 (Insight Expert) ━━━",
+        f"📌 Sujet : {sujets_linkedin[0]}",
+        f"⏰ Heure : {MARCHES[marche]['horaires']['linkedin'][0]}",
+        "",
+        generer_contenu(sujets_linkedin[0], "linkedin", marche, "professionnel"),
+        "",
+        "━━━ MERCREDI — POST LINKEDIN #2 (Étude de Cas) ━━━",
+        f"📌 Sujet : {sujets_linkedin[1]}",
+        f"⏰ Heure : {MARCHES[marche]['horaires']['linkedin'][1]}",
+        "",
+        generer_contenu(sujets_linkedin[1], "linkedin", marche, "storytelling"),
+        "",
+        "━━━ VENDREDI — POST LINKEDIN #3 (Engagement) ━━━",
+        f"📌 Sujet : {sujets_linkedin[2]}",
+        f"⏰ Heure : {MARCHES[marche]['horaires']['linkedin'][2]}",
+        "",
+        generer_contenu(sujets_linkedin[2], "linkedin", marche, "educatif"),
+        "",
+        "━━━ TIKTOK/REELS #1 (Mardi) — Audit Site Web ━━━",
+        f"⏰ Heure : {MARCHES[marche]['horaires']['tiktok'][1]}",
+        "",
+        generer_script_audit_tiktok(marche, angles_tiktok[0], 60),
+        "",
+        "━━━ TIKTOK/REELS #2 (Jeudi) — Audit Réseaux Sociaux ━━━",
+        f"⏰ Heure : {MARCHES[marche]['horaires']['tiktok'][2]}",
+        "",
+        generer_script_audit_tiktok(marche, angles_tiktok[1], 45),
+        "",
+        "=" * 60,
+        f"📊 RÉCAP CAMPAGNE SEMAINE {drapeau} :",
+        f"   💼 LinkedIn : 3 posts (Lundi / Mercredi / Vendredi)",
+        f"   🎬 TikTok   : 2 scripts Audit (Mardi / Jeudi)",
+        f"   🎯 CTA unifié : {cta}",
+        f"   🤖 ManyChat : Mot-clé AUDIT actif sur tous les TikTok",
+        "",
+        "💡 Conseil : Filmez les 2 TikTok le même jour (lundi matin), programmez le reste.",
+    ]
+
+    return "\n".join(lignes)
+
+
+@mcp.tool()
 def generer_legende(sujet: str, reseau: str, marche: str = "france", objectif: str = "engagement") -> str:
     """
     Crée une légende complète prête à copier-coller pour Webdesign & Co.
@@ -1109,6 +1460,39 @@ def run_webhook_server():
                 reseau=data.get("reseau", "instagram"),
                 marche=data.get("marche", "france"),
                 objectif=data.get("objectif", "engagement"),
+            ),
+        })
+
+    @app.post("/webhook/audit-tiktok")
+    async def webhook_audit_tiktok(request: Request):
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        return JSONResponse({
+            "status": "success",
+            "script": generer_script_audit_tiktok(
+                marche=data.get("marche", "france"),
+                angle=data.get("angle", "site_web"),
+                duree=int(data.get("duree", 60)),
+            ),
+        })
+
+    @app.get("/concurrence")
+    async def get_concurrence(concurrent: str = "tous", marche: str = "france"):
+        return JSONResponse({
+            "status": "success",
+            "analyse": analyser_concurrence(concurrent=concurrent, marche=marche),
+        })
+
+    @app.post("/webhook/campagne-semaine")
+    async def webhook_campagne_semaine(request: Request):
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        return JSONResponse({
+            "status": "success",
+            "campagne": generer_campagne_semaine(
+                marche=data.get("marche", "france"),
+                semaine_debut=data.get("semaine_debut", ""),
+                objectif=data.get("objectif", "leads"),
             ),
         })
 
