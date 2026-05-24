@@ -12,16 +12,41 @@ import xml.etree.ElementTree as ET
 # IMAGE
 # ─────────────────────────────────────────────
 
-def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
-    """Image Pexels (thème web design / agence violette) si PEXELS_API_KEY défini, sinon Picsum."""
-    seed = (
-        sujet.lower()
-        .replace("é", "e").replace("è", "e").replace("ê", "e")
-        .replace("à", "a").replace("â", "a").replace("ô", "o")
-        .replace("û", "u").replace("ç", "c").replace("'", "")
-        .replace(" ", "-").replace("&", "and").replace("/", "-")
-    )[:40]
+_drive_image_ids: list = []
 
+
+def _charger_images_drive() -> list:
+    """Liste et met en cache les IDs d'images du dossier Google Drive dédié."""
+    global _drive_image_ids
+    if _drive_image_ids:
+        return _drive_image_ids
+    if not GOOGLE_SERVICE_ACCOUNT_JSON:
+        print("[DRIVE] GOOGLE_SERVICE_ACCOUNT_JSON non défini — images Drive indisponibles.")
+        return []
+    try:
+        from google.oauth2.service_account import Credentials
+        from google.auth.transport.requests import Request as GoogleRequest
+        sa_info = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+        creds = Credentials.from_service_account_info(
+            sa_info,
+            scopes=["https://www.googleapis.com/auth/drive.readonly"],
+        )
+        creds.refresh(GoogleRequest())
+        q = urllib.parse.quote(f"'{GOOGLE_DRIVE_IMAGES_FOLDER_ID}' in parents and mimeType contains 'image/'")
+        url = f"https://www.googleapis.com/drive/v3/files?q={q}&fields=files(id,name)&pageSize=100"
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {creds.token}"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+        _drive_image_ids = [f["id"] for f in data.get("files", [])]
+        print(f"[DRIVE] {len(_drive_image_ids)} images chargées (dossier {GOOGLE_DRIVE_IMAGES_FOLDER_ID})")
+    except Exception as e:
+        print(f"[DRIVE] Erreur chargement images : {e}")
+    return _drive_image_ids
+
+
+def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
+    """Image Pexels (thème web design violet) ou Google Drive. Jamais Picsum."""
+    # Priorité 1 : Pexels API
     if PEXELS_API_KEY:
         queries = [
             "web design digital agency purple",
@@ -47,10 +72,14 @@ def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
         except Exception as e:
             print(f"[PEXELS] Erreur image {reseau} : {e}")
 
-    # Fallback Picsum
-    dimensions = {"instagram": "1080/1080", "tiktok": "1080/1920", "linkedin": "1200/628"}
-    dim = dimensions.get(reseau, "1200/628")
-    return f"https://picsum.photos/seed/{seed}/{dim}"
+    # Priorité 2 : Google Drive (dossier dédié Webdesign & Co)
+    ids = _charger_images_drive()
+    if ids:
+        file_id = ids[sum(ord(c) for c in sujet + reseau) % len(ids)]
+        return f"https://drive.google.com/uc?export=view&id={file_id}"
+
+    print(f"[IMAGE] Aucune source disponible (Pexels KO, Drive KO) pour {reseau} — {sujet[:30]}")
+    return ""
 
 
 # ─────────────────────────────────────────────
@@ -68,6 +97,7 @@ RENDER_URL = os.environ.get(
 LOG_FILE = "/tmp/publications_log.json"
 POSTS_USED_FILE = "posts_used.json"
 PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
+GOOGLE_DRIVE_IMAGES_FOLDER_ID = "17mBms_qbrP0oZNBfikFTHbtiIGvaHdt-"
 
 # Google Sheets — variables d'environnement à configurer dans Render :
 #   GOOGLE_SERVICE_ACCOUNT_JSON : contenu JSON complet du service account
