@@ -44,22 +44,26 @@ def _charger_images_drive() -> list:
     return _drive_image_ids
 
 
+def _choisir_query_pexels(sujet: str, reseau: str) -> str:
+    """Sélectionne la requête Pexels la plus pertinente selon le sujet et le réseau."""
+    s = sujet.lower()
+    if any(k in s for k in ["dubai", "emirat", "émirat", "golfe", "moyen-orient", "gulf"]):
+        return "Dubai business skyline modern"
+    if reseau == "linkedin" or any(k in s for k in ["b2b", "dirigeant", "professionnel", "réunion", "management"]):
+        return "business professional meeting office"
+    if any(k in s for k in ["marketing", "seo", "référencement", "community", "réseaux sociaux", "campagne", "publicité"]):
+        return "digital marketing laptop professional"
+    return "web design agency purple digital"
+
+
 def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
-    """Image Pexels (thème web design violet) ou Google Drive. Jamais Picsum."""
-    # Priorité 1 : Pexels API
+    """Pexels (priorité absolue, requête thématique) → Google Drive. Jamais Picsum."""
+    # Priorité 1 : Pexels API — toujours en premier
     if PEXELS_API_KEY:
-        queries = [
-            "web design digital agency purple",
-            "digital marketing agency workspace",
-            "web design branding studio purple",
-            "digital agency creative team modern",
-            "website design purple modern office",
-        ]
-        q_idx = sum(ord(c) for c in sujet) % len(queries)
+        query = _choisir_query_pexels(sujet, reseau)
         orientations = {"tiktok": "portrait", "instagram": "square", "linkedin": "landscape"}
         orientation = orientations.get(reseau, "landscape")
-        query = urllib.parse.quote_plus(queries[q_idx])
-        url = f"https://api.pexels.com/v1/search?query={query}&per_page=15&orientation={orientation}"
+        url = f"https://api.pexels.com/v1/search?query={urllib.parse.quote_plus(query)}&per_page=15&orientation={orientation}"
         try:
             req = urllib.request.Request(url, headers={"Authorization": PEXELS_API_KEY})
             with urllib.request.urlopen(req, timeout=10) as resp:
