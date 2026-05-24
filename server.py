@@ -4,6 +4,7 @@ import json
 import os
 import random
 import sys
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -12,6 +13,7 @@ import xml.etree.ElementTree as ET
 # ─────────────────────────────────────────────
 
 def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
+    """Image Pexels (thème web design / agence violette) si PEXELS_API_KEY défini, sinon Picsum."""
     seed = (
         sujet.lower()
         .replace("é", "e").replace("è", "e").replace("ê", "e")
@@ -19,6 +21,33 @@ def generer_image_url(sujet: str, reseau: str = "instagram") -> str:
         .replace("û", "u").replace("ç", "c").replace("'", "")
         .replace(" ", "-").replace("&", "and").replace("/", "-")
     )[:40]
+
+    if PEXELS_API_KEY:
+        queries = [
+            "web design digital agency purple",
+            "digital marketing agency workspace",
+            "web design branding studio purple",
+            "digital agency creative team modern",
+            "website design purple modern office",
+        ]
+        q_idx = sum(ord(c) for c in sujet) % len(queries)
+        orientations = {"tiktok": "portrait", "instagram": "square", "linkedin": "landscape"}
+        orientation = orientations.get(reseau, "landscape")
+        query = urllib.parse.quote_plus(queries[q_idx])
+        url = f"https://api.pexels.com/v1/search?query={query}&per_page=15&orientation={orientation}"
+        try:
+            req = urllib.request.Request(url, headers={"Authorization": PEXELS_API_KEY})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read())
+            photos = data.get("photos", [])
+            if photos:
+                photo = photos[sum(ord(c) for c in sujet) % len(photos)]
+                sizes = {"instagram": "large2x", "tiktok": "portrait", "linkedin": "large2x"}
+                return photo["src"].get(sizes.get(reseau, "large2x"), photo["src"]["original"])
+        except Exception as e:
+            print(f"[PEXELS] Erreur image {reseau} : {e}")
+
+    # Fallback Picsum
     dimensions = {"instagram": "1080/1080", "tiktok": "1080/1920", "linkedin": "1200/628"}
     dim = dimensions.get(reseau, "1200/628")
     return f"https://picsum.photos/seed/{seed}/{dim}"
@@ -37,6 +66,8 @@ RENDER_URL = os.environ.get(
     "https://mon-premier-skill-mcps.onrender.com"
 )
 LOG_FILE = "/tmp/publications_log.json"
+POSTS_USED_FILE = "posts_used.json"
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
 
 # Google Sheets — variables d'environnement à configurer dans Render :
 #   GOOGLE_SERVICE_ACCOUNT_JSON : contenu JSON complet du service account
@@ -223,6 +254,32 @@ def enregistrer_publication(sujet: str, marche: str, reseau: str, ton: str = "",
             json.dump(_publications_log[-500:], f, ensure_ascii=False)
     except Exception:
         pass
+
+
+_posts_used: set = set()
+
+
+def charger_posts_used():
+    global _posts_used
+    try:
+        with open(POSTS_USED_FILE, "r", encoding="utf-8") as f:
+            _posts_used = set(json.load(f))
+        print(f"[POSTS_USED] {len(_posts_used)} entrées chargées")
+    except (FileNotFoundError, json.JSONDecodeError):
+        _posts_used = set()
+
+
+def marquer_post_utilise(sujet: str, marche: str, reseau: str):
+    _posts_used.add(f"{sujet}|{marche}|{reseau}")
+    try:
+        with open(POSTS_USED_FILE, "w", encoding="utf-8") as f:
+            json.dump(sorted(_posts_used), f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[POSTS_USED] Sauvegarde échouée : {e}")
+
+
+def post_deja_publie(sujet: str, marche: str, reseau: str) -> bool:
+    return f"{sujet}|{marche}|{reseau}" in _posts_used
 
 
 def sujet_deja_publie_recemment(sujet: str, marche: str, jours: int = 14) -> bool:
@@ -824,6 +881,103 @@ def generer_legende(sujet: str, reseau: str, marche: str = "france", objectif: s
 
 
 # ─────────────────────────────────────────────
+# CAPTION SOCIALE (sans headers structurels)
+# ─────────────────────────────────────────────
+
+def _generer_caption_sociale(sujet: str, reseau: str, marche: str = "france", ton: str = "professionnel") -> str:
+    """Texte propre prêt à publier, sans séparateurs ni titres de section."""
+    drapeau = MARCHES[marche]["emoji_drapeau"]
+    hashtags = " ".join(HASHTAGS_BASE[reseau][marche][:8]) + " #WebdesignAndCo"
+
+    hooks = {
+        "professionnel": [
+            f"Votre entreprise mérite le meilleur design. Voici pourquoi ▼",
+            f"Ce que personne ne vous dit sur {sujet} en {marche.capitalize()}.",
+            f"3 erreurs fatales à éviter sur {sujet} pour les PME {drapeau}",
+        ],
+        "educatif": [
+            f"📚 Saviez-vous que {sujet} peut transformer votre business ? Voici comment ▼",
+            f"Leçon du jour : tout ce que vous devez savoir sur {sujet} en {marche.capitalize()}.",
+            f"Guide complet : {sujet} pour les PME {drapeau} — 3 points essentiels",
+        ],
+        "inspirant": [
+            f"Et si {sujet} était la clé de votre croissance en {marche.capitalize()} ? ✨",
+            f"Nous avons transformé des PME grâce à {sujet}. Voici leur histoire 👇",
+            f"La réussite digitale commence par {sujet}. On vous explique tout. {drapeau}",
+        ],
+        "promotionnel": [
+            f"🎯 Offre exclusive Webdesign & Co sur {sujet}. Places limitées !",
+            f"💥 Ce mois-ci : audit GRATUIT de votre {sujet} pour les PME {drapeau}",
+            f"Transformez votre image avec {sujet} — Diagnostic offert cette semaine !",
+        ],
+        "storytelling": [
+            f"Il y a 6 mois, cette PME {drapeau} galérait avec {sujet}. Aujourd'hui, elle cartonne. 👇",
+            f"On a tout misé sur {sujet} pour un client en {marche.capitalize()}. Voici ce qui s'est passé…",
+            f"De 0 à 10K abonnés grâce à {sujet} — l'histoire vraie d'une PME {drapeau}",
+        ],
+    }
+    hook = random.choice(hooks.get(ton, hooks["professionnel"]))
+
+    corps_ton = {
+        "educatif": (
+            f"📖 Pourquoi c'est important :\n"
+            f"{sujet} est l'un des leviers les plus puissants pour les PME {drapeau} en 2025.\n\n"
+            f"✅ 78% des PME sans stratégie digitale perdent des clients en ligne\n"
+            f"✅ Un design professionnel augmente la confiance de 60%\n"
+            f"✅ {sujet} = visibilité + crédibilité + croissance\n\n"
+        ),
+        "promotionnel": (
+            f"🚀 Notre offre du moment :\n"
+            f"🎁 Audit gratuit de votre présence digitale\n"
+            f"🎁 Stratégie personnalisée pour votre marché\n"
+            f"🎁 Accompagnement de A à Z\n\n"
+            f"⏰ Offre valable cette semaine seulement — places limitées !\n\n"
+        ),
+        "storytelling": (
+            f"Un de nos clients en {marche.capitalize()} {drapeau} nous a contactés : personne ne connaissait son entreprise malgré 10 ans d'expérience.\n\n"
+            f"On a repensé toute sa présence digitale en 6 semaines.\n\n"
+            f"✅ +300% de visibilité en ligne\n"
+            f"✅ 3 nouveaux clients en 30 jours\n"
+            f"✅ Une image de marque qui inspire confiance\n\n"
+        ),
+    }
+    corps_defaut = (
+        f"Chez Webdesign & Co, nous accompagnons les PME {drapeau} dans leur transformation digitale.\n\n"
+        f"❆ Audit de votre présence digitale\n"
+        f"❆ Stratégie sur mesure\n"
+        f"❆ Création & déploiement\n"
+        f"❆ Suivi & optimisation\n\n"
+    )
+    corps = corps_ton.get(ton, corps_defaut)
+
+    if reseau == "tiktok":
+        return (
+            f"{hook}\n\n"
+            f"{corps}"
+            f"Suivez-nous pour plus de conseils ! Lien en bio pour un audit gratuit. 🔗\n\n"
+            f"{hashtags}"
+        )
+    elif reseau == "linkedin":
+        return (
+            f"{hook}\n\n"
+            f"En tant que dirigeant de PME en {marche.capitalize()}, {sujet} est devenu incontournable.\n\n"
+            f"{corps}"
+            f"Prêt à passer à l'étape suivante ?\n"
+            f"Contactez-nous pour un audit offert → lien en commentaire.\n\n"
+            f"♻️ Partagez si cela peut aider un entrepreneur de votre réseau !\n\n"
+            f"{hashtags}"
+        )
+    else:
+        return (
+            f"{hook}\n\n"
+            f"✨ {sujet} : le secret des PME qui cartonnent en {marche.capitalize()} {drapeau}\n\n"
+            f"{corps}"
+            f"👇 Commentez 'AUDIT' pour recevoir votre diagnostic gratuit !\n\n"
+            f"{hashtags}"
+        )
+
+
+# ─────────────────────────────────────────────
 # PUBLICATION AUTOMATIQUE
 # ─────────────────────────────────────────────
 
@@ -839,6 +993,10 @@ def publier_automatiquement(marche: str, reseau: str):
     sujet, source = choisir_sujet(marche)
     ton = choisir_ton()
 
+    if post_deja_publie(sujet, marche, reseau):
+        print(f"[SCHEDULER] SKIP (déjà publié) : {marche.upper()} {reseau.upper()} | {sujet[:40]}")
+        return
+
     payload = {
         "sujet": sujet,
         "marche": marche,
@@ -847,15 +1005,15 @@ def publier_automatiquement(marche: str, reseau: str):
         "source_sujet": source,
         "publications": {
             "tiktok": {
-                "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
+                "contenu": _generer_caption_sociale(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
                 "image_url": generer_image_url(sujet, "tiktok"),
             },
             "linkedin": {
-                "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
+                "contenu": _generer_caption_sociale(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
                 "image_url": generer_image_url(sujet, "linkedin"),
             },
             "instagram": {
-                "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+                "contenu": _generer_caption_sociale(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
                 "image_url": generer_image_url(sujet, "instagram"),
             },
         },
@@ -871,6 +1029,7 @@ def publier_automatiquement(marche: str, reseau: str):
     result = envoyer_vers_make(payload)
     if result.get("status") == "envoyé":
         enregistrer_publication(sujet, marche, reseau, ton=ton, source=source)
+        marquer_post_utilise(sujet, marche, reseau)
 
     print(f"[SCHEDULER] {marche.upper()} {reseau.upper()} | ton={ton} | source={source} | {sujet[:40]} → {result.get('status')}")
 
@@ -884,6 +1043,7 @@ def demarrer_scheduler():
     from apscheduler.triggers.cron import CronTrigger
 
     charger_log()
+    charger_posts_used()
 
     scheduler = BackgroundScheduler(timezone="UTC")
 
