@@ -1243,17 +1243,17 @@ def run_webhook_server():
             "date_publication": date_publication,
             "publications": {
                 "tiktok": {
-                    "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
+                    "contenu": _generer_caption_sociale(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
                     "image_url": image_url or generer_image_url(sujet, "tiktok"),
                     "date_publication": date_publication,
                 },
                 "linkedin": {
-                    "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
+                    "contenu": _generer_caption_sociale(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
                     "image_url": image_url or generer_image_url(sujet, "linkedin"),
                     "date_publication": date_publication,
                 },
                 "instagram": {
-                    "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+                    "contenu": _generer_caption_sociale(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
                     "image_url": image_url or generer_image_url(sujet, "instagram"),
                     "date_publication": date_publication,
                 },
@@ -1323,15 +1323,15 @@ def run_webhook_server():
             "ton": ton,
             "publications": {
                 "tiktok": {
-                    "contenu": generer_contenu(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
+                    "contenu": _generer_caption_sociale(sujet=sujet, reseau="tiktok", marche=marche, ton=ton),
                     "image_url": image_url_fournie or generer_image_url(sujet, "tiktok"),
                 },
                 "linkedin": {
-                    "contenu": generer_contenu(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
+                    "contenu": _generer_caption_sociale(sujet=sujet, reseau="linkedin", marche=marche, ton=ton),
                     "image_url": image_url_fournie or generer_image_url(sujet, "linkedin"),
                 },
                 "instagram": {
-                    "contenu": generer_contenu(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
+                    "contenu": _generer_caption_sociale(sujet=sujet, reseau="instagram", marche=marche, ton=ton),
                     "image_url": image_url_fournie or generer_image_url(sujet, "instagram"),
                 },
             },
