@@ -241,11 +241,27 @@ def sujet_deja_publie_recemment(sujet: str, marche: str, jours: int = 14) -> boo
 # 4. VEILLE CONCURRENTIELLE — RSS Google News
 # ─────────────────────────────────────────────
 
-TENDANCES_VEILLE: dict = {"france": [], "dubai": []}
+TENDANCES_VEILLE: dict = {"france": [], "dubai": [], "usa": []}
+FAILLES_VEILLE: dict = {"france": [], "dubai": [], "usa": []}
 
 RSS_QUERIES = {
     "france": "webdesign+agence+digitale+PME+identité+visuelle",
     "dubai": "web+design+digital+agency+Dubai+francophone",
+    "usa": "web+design+agency+lead+generation+automation+AI",
+}
+
+# Requêtes ciblées sur les failles concurrentielles (formulaires statiques, relances manuelles, leads perdus)
+RSS_QUERIES_CONCURRENTS = {
+    "france": "agence+web+formulaire+contact+leads+perdus+relance+manuelle",
+    "dubai": "digital+agency+Dubai+lead+response+time+contact+form+automation",
+    "usa": "agency+static+contact+form+lost+leads+manual+follow+up+CRM",
+}
+
+# Concurrents ciblés par marché pour la surveillance
+CONCURRENTS_CIBLES = {
+    "france": ["Digidop", "Eskimoz", "Junto", "Plezi", "Nile"],
+    "dubai": ["Nexa", "Blue Beetle", "Chain Reaction", "Digital Gravity"],
+    "usa": ["NoGood", "Single Grain", "Ignite Visibility", "WebFX", "Thrive"],
 }
 
 # Mots-clés de pertinence secteur — un titre doit contenir au moins un de ces termes
@@ -260,6 +276,49 @@ MOTS_CLES_SECTEUR = [
     "ux", "expérience utilisateur", "conversion",
     "dubai", "émirats", "golfe", "moyen-orient",
     "digital", "numérique", "transformation digitale",
+    # Lead generation & automation (veille concurrentielle)
+    "lead", "formulaire", "contact form", "crm", "automation",
+    "whatsapp", "sms", "relance", "follow-up", "pipeline",
+    "make.com", "zapier", "n8n", "webhook", "workflow",
+    "intelligence artificielle", "ia", "ai", "chatgpt",
+    "taux de conversion", "leads perdus", "qualification",
+    "réponse automatique", "bot", "séquence email",
+]
+
+# Failles concurrentielles statiques (enrichi au démarrage par la veille RSS)
+FAILLES_CONCURRENTS_BASE = [
+    {
+        "faille": "formulaire_statique",
+        "description": "Formulaire de contact statique sans automation CRM",
+        "stat_choc": "73% des leads ne reçoivent pas de réponse dans les 5 premières minutes — passé ce délai, la conversion chute de 21x.",
+        "solution_make": "Formulaire → Make.com → WhatsApp/SMS < 90 sec + relances J+1/J+3/J+7 automatiques",
+        "cta_keyword": "BLUEPRINT",
+        "marches": ["france", "dubai", "usa"],
+    },
+    {
+        "faille": "relance_manuelle",
+        "description": "Relances prospects 100% manuelles sans séquence automatisée",
+        "stat_choc": "92% des agences relancent leurs prospects à la main. Résultat : 67% des leads chauds oubliés après 48h.",
+        "solution_make": "CRM → Make.com → Séquence WhatsApp/Email/SMS multi-canal + scoring IA automatique",
+        "cta_keyword": "WORKFLOW",
+        "marches": ["france", "dubai", "usa"],
+    },
+    {
+        "faille": "audit_manuel",
+        "description": "Audit client réalisé manuellement, sans outil d'analyse automatisé",
+        "stat_choc": "Les agences traditionnelles passent 4h en moyenne sur un audit client. Nous : 12 minutes grâce à l'IA.",
+        "solution_make": "URL client → Make.com + Claude AI → Rapport d'audit complet + Loom personnalisé auto-envoyé",
+        "cta_keyword": "AUDIT",
+        "marches": ["france", "dubai", "usa"],
+    },
+    {
+        "faille": "reporting_manuel",
+        "description": "Reporting mensuel client préparé manuellement sous Excel/PDF",
+        "stat_choc": "8h/mois de reporting manuel par client. Nos concurrents le font encore à la main en 2025.",
+        "solution_make": "Google Analytics + Semrush → Make.com → Rapport PDF auto-généré + envoi client automatique",
+        "cta_keyword": "REPORTING",
+        "marches": ["france", "dubai", "usa"],
+    },
 ]
 
 
@@ -305,11 +364,80 @@ def scraper_tendances_rss(marche: str = "france") -> list:
     return filtres
 
 
+def scraper_failles_concurrents_rss(marche: str = "france") -> list:
+    """
+    Scrape Google News RSS sur les failles concurrentielles (formulaires, leads, relances).
+    Retourne une liste de titres pertinents enrichis du contexte concurrent.
+    """
+    query = RSS_QUERIES_CONCURRENTS.get(marche, RSS_QUERIES_CONCURRENTS["france"])
+    lang = "fr" if marche in ["france", "dubai"] else "en"
+    gl = "FR" if marche == "france" else ("AE" if marche == "dubai" else "US")
+    url = f"https://news.google.com/rss/search?q={query}&hl={lang}&gl={gl}&ceid={gl}:{lang}"
+    titres = []
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            xml_data = resp.read()
+        root = ET.fromstring(xml_data)
+        channel = root.find("channel")
+        if channel is None:
+            return []
+        for item in channel.findall("item")[:15]:
+            titre_el = item.find("title")
+            if titre_el is not None and titre_el.text:
+                titre = titre_el.text.strip().split(" - ")[0].strip()
+                if 15 <= len(titre) <= 140:
+                    titres.append(titre)
+    except Exception as e:
+        print(f"[VEILLE CONCURRENTS] RSS {marche} échoué : {e}")
+    print(f"[VEILLE CONCURRENTS] {marche.upper()} — {len(titres)} failles détectées")
+    return titres
+
+
+def scraper_tiktok_concurrent(query: str, max_results: int = 5) -> list:
+    """
+    Scrape TikTok via Apify pour surveiller les posts viraux de concurrents
+    sur des mots-clés liés aux failles (formulaires, leads, automation).
+    Nécessite APIFY_TOKEN en variable d'environnement.
+    """
+    apify_token = os.environ.get("APIFY_TOKEN")
+    if not apify_token:
+        print("[APIFY] APIFY_TOKEN manquant — scraping TikTok désactivé")
+        return []
+    try:
+        from apify_client import ApifyClient
+        client = ApifyClient(apify_token)
+        run = client.actor("clockworks/tiktok-scraper").call(
+            run_input={"searchQueries": [query], "resultsPerPage": max_results},
+            timeout_secs=90,
+        )
+        posts = []
+        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+            likes = item.get("diggCount", 0)
+            comments = item.get("commentCount", 0)
+            shares = item.get("shareCount", 0)
+            posts.append({
+                "auteur": item.get("author", {}).get("nickname", "Inconnu"),
+                "texte": item.get("desc", "")[:200],
+                "url": item.get("webVideoUrl", ""),
+                "engagement": likes + (comments * 2) + (shares * 3),
+                "metrics": {"likes": likes, "comments": comments, "shares": shares},
+            })
+        posts.sort(key=lambda x: x["engagement"], reverse=True)
+        print(f"[APIFY] TikTok '{query}' — {len(posts)} posts récupérés")
+        return posts
+    except Exception as e:
+        print(f"[APIFY] Erreur TikTok scraping : {e}")
+        return []
+
+
 def rafraichir_veille():
-    """Appelé chaque matin à 06h00 UTC pour mettre à jour les tendances."""
-    for marche in ["france", "dubai"]:
+    """Appelé chaque matin à 06h00 UTC pour mettre à jour les tendances et la veille concurrentielle."""
+    for marche in ["france", "dubai", "usa"]:
         titres = scraper_tendances_rss(marche)
         TENDANCES_VEILLE[marche] = titres
+        failles = scraper_failles_concurrents_rss(marche)
+        FAILLES_VEILLE[marche] = failles
 
 
 # ─────────────────────────────────────────────
@@ -323,7 +451,8 @@ def choisir_sujet(marche: str) -> tuple:
     2. Rotation mensuelle 28 sujets (si non déjà publié)
     3. Rotation forcée (fallback)
     """
-    sujets_28 = SUJETS_FRANCE_28 if marche == "france" else SUJETS_DUBAI_28
+    sujets_map = {"france": SUJETS_FRANCE_28, "dubai": SUJETS_DUBAI_28, "usa": SUJETS_USA_28}
+    sujets_28 = sujets_map.get(marche, SUJETS_FRANCE_28)
 
     # Priorité 1 : sujet issu de la veille RSS
     for titre in TENDANCES_VEILLE.get(marche, []):
@@ -400,7 +529,51 @@ MARCHES = {
             "instagram": ["09h00", "13h00", "19h00", "21h30"],
         },
     },
+    "usa": {
+        "timezone": "America/New_York",
+        "langue": "anglais",
+        "emoji_drapeau": "🇺🇸",
+        "horaires": {
+            "tiktok": ["08h00", "12h00", "19h00", "21h00"],
+            "linkedin": ["08h00", "12h00", "17h00"],
+            "instagram": ["08h00", "13h00", "18h00", "21h00"],
+        },
+    },
 }
+
+SUJETS_USA_28 = [
+    # Week 1 — Identity & branding
+    "visual identity for US startups",
+    "professional logo design for American businesses",
+    "brand guidelines and consistency",
+    "personal branding for US founders",
+    "website redesign: before & after",
+    "why your website isn't converting",
+    "mobile-first web design in 2025",
+    # Week 2 — SEO & visibility
+    "local SEO for US small businesses",
+    "Google Business Profile optimization",
+    "content strategy for US market visibility",
+    "LinkedIn B2B for US companies",
+    "Instagram for US business growth",
+    "TikTok: growth lever for small businesses",
+    "digital ads on a small budget",
+    # Week 3 — Lead gen & automation
+    "e-commerce for US boutiques",
+    "UX design that converts",
+    "social proof and customer testimonials",
+    "sales funnel for small businesses",
+    "AI marketing automation to save time",
+    "AI tools for US small businesses in 2025",
+    "email marketing: still profitable in 2025",
+    # Week 4 — Expertise & storytelling
+    "fatal web design mistakes in the US",
+    "how to double revenue through digital",
+    "success story: US business transformed",
+    "design trends to adopt in 2025",
+    "digital presence: complete checklist for US SMBs",
+    "investing in professional design: ROI breakdown",
+]
 
 TENDANCES_BASE = {
     "france": [
@@ -411,6 +584,15 @@ TENDANCES_BASE = {
         {"sujet": "SEO local pour commerces français", "score": 86, "hashtag_cle": "#SEOLocal"},
         {"sujet": "UX / expérience utilisateur & conversions", "score": 85, "hashtag_cle": "#UXDesign"},
         {"sujet": "Réseaux sociaux B2B en France", "score": 82, "hashtag_cle": "#MarketingFrance"},
+    ],
+    "usa": [
+        {"sujet": "AI automation for US small businesses", "score": 98, "hashtag_cle": "#AIAutomation"},
+        {"sujet": "Lead generation with Make.com workflows", "score": 95, "hashtag_cle": "#LeadGen"},
+        {"sujet": "Luxury branding for US market", "score": 92, "hashtag_cle": "#USBranding"},
+        {"sujet": "Personal branding for US founders", "score": 89, "hashtag_cle": "#PersonalBranding"},
+        {"sujet": "Mobile-first web design 2025", "score": 86, "hashtag_cle": "#WebDesignUSA"},
+        {"sujet": "WhatsApp & SMS lead automation", "score": 84, "hashtag_cle": "#SalesAutomation"},
+        {"sujet": "B2B LinkedIn strategy for US agencies", "score": 81, "hashtag_cle": "#LinkedInUSA"},
     ],
     "dubai": [
         {"sujet": "Luxury branding & prestige digital", "score": 98, "hashtag_cle": "#DubaiLuxury"},
@@ -447,8 +629,22 @@ HASHTAGS_BASE = {
         "dubai": ["#DubaiDesign", "#WebDesignDubai", "#DubaiMarketing", "#FrancaisDubai",
                   "#LuxuryDesign", "#DesignDubai", "#DubaiEntrepreneur", "#UAEDesign",
                   "#FrancophonesDubai", "#DubaiAgency", "#BrandingDubai", "#DubaiLuxury"],
+        "usa": ["#WebDesignUSA", "#DigitalAgency", "#LeadGeneration", "#AIAutomation",
+                "#SmallBusiness", "#StartupUSA", "#MarketingAutomation", "#SalesAutomation",
+                "#MakeComWorkflow", "#GrowthHacking", "#B2BMarketing", "#AgencyLife"],
     },
 }
+
+HASHTAGS_BASE["tiktok"]["usa"] = [
+    "#WebDesignUSA", "#AIAutomation", "#LeadGenTips", "#MakeComWorkflow",
+    "#DigitalAgencyUSA", "#SmallBusinessTips", "#SalesAutomation", "#GrowthHacks",
+    "#MarketingUSA", "#AgencyLife",
+]
+HASHTAGS_BASE["linkedin"]["usa"] = [
+    "#AIAutomation", "#LeadGeneration", "#WebDesignUSA", "#B2BMarketing",
+    "#SalesAutomation", "#MakeComWorkflow", "#DigitalTransformation",
+    "#GrowthMarketing", "#AgencyLife", "#StartupUSA",
+]
 
 JOURS_SEMAINE = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
@@ -478,6 +674,300 @@ def analyser_tendances(marche: str = "france", nb_tendances: int = 5) -> str:
 
     lignes.append("💡 Conseil : Surfez sur la tendance #1 cette semaine pour maximiser votre portée.")
     return "\n".join(lignes)
+
+
+@mcp.tool()
+def surveiller_concurrence(
+    marche: str = "france",
+    inclure_tiktok: bool = False,
+    mot_cle_tiktok: str = "",
+) -> str:
+    """
+    Surveille les failles concurrentielles sur un marché donné (France/Dubai/USA).
+    Agrège : failles statiques connues + veille RSS en temps réel + TikTok viral (si APIFY_TOKEN configuré).
+    marche : 'france', 'dubai' ou 'usa'.
+    inclure_tiktok : active le scraping TikTok via Apify (nécessite APIFY_TOKEN).
+    mot_cle_tiktok : mot-clé personnalisé pour TikTok (défaut auto selon marché).
+    """
+    marche = marche.lower()
+    if marche not in MARCHES:
+        return json.dumps({"erreur": "Marché inconnu. Utilisez 'france', 'dubai' ou 'usa'."}, ensure_ascii=False)
+
+    drapeau = MARCHES[marche]["emoji_drapeau"]
+    concurrents = CONCURRENTS_CIBLES.get(marche, [])
+
+    lignes = [
+        f"🔍 SURVEILLANCE CONCURRENTIELLE — {drapeau} {marche.upper()}",
+        f"Concurrents ciblés : {', '.join(concurrents)}",
+        "=" * 60,
+        "",
+        "⚠️  FAILLES DÉTECTÉES (base statique) :",
+    ]
+
+    failles_marche = [f for f in FAILLES_CONCURRENTS_BASE if marche in f["marches"]]
+    for i, f in enumerate(failles_marche, 1):
+        lignes += [
+            f"  #{i} [{f['faille'].upper()}]",
+            f"     Faille    : {f['description']}",
+            f"     Stat choc : {f['stat_choc']}",
+            f"     Notre fix : {f['solution_make']}",
+            f"     CTA       : Commentez « {f['cta_keyword']} »",
+            "",
+        ]
+
+    # Veille RSS temps réel
+    failles_rss = FAILLES_VEILLE.get(marche, [])
+    if failles_rss:
+        lignes += [
+            "📡 SIGNAUX RSS TEMPS RÉEL (failles concurrentielles) :",
+            *[f"  • {t}" for t in failles_rss[:5]],
+            "",
+        ]
+    else:
+        lignes.append("📡 Veille RSS : aucun signal frais (lancer rafraichir_veille ou attendre 06h00 UTC)\n")
+
+    # TikTok viral via Apify
+    if inclure_tiktok:
+        query = mot_cle_tiktok or (
+            "agence web formulaire automatisation" if marche == "france"
+            else ("digital agency lead automation" if marche == "usa"
+                  else "digital agency Dubai automation")
+        )
+        posts = scraper_tiktok_concurrent(query, max_results=3)
+        if posts:
+            lignes += [f"🎬 TIKTOK VIRAL — top posts '{query}' :"]
+            for p in posts:
+                lignes.append(
+                    f"  @{p['auteur']} | {p['metrics']['likes']}❤️ {p['metrics']['comments']}💬 "
+                    f"| {p['texte'][:80]}…"
+                )
+            lignes.append("")
+        else:
+            lignes.append("🎬 TikTok : APIFY_TOKEN manquant ou aucun résultat.\n")
+
+    lignes += [
+        "=" * 60,
+        "💡 Action recommandée : utilisez generer_post_concurrent() pour transformer",
+        "   une faille en post LinkedIn haute-conversion prêt pour votre webhook Make.",
+    ]
+    return "\n".join(lignes)
+
+
+@mcp.tool()
+def generer_post_concurrent(
+    faille: str,
+    marche: str = "france",
+    reseau: str = "linkedin",
+) -> str:
+    """
+    Génère un post haute-conversion qui attaque une faille concurrentielle.
+    Respecte le tone of voice de Webdesign & Co : hook froid (stat choc), fix Make.com précis, CTA « Comment ».
+    faille : 'formulaire_statique' | 'relance_manuelle' | 'audit_manuel' | 'reporting_manuel' | texte libre.
+    marche : 'france', 'dubai' ou 'usa'.
+    reseau : 'linkedin' (défaut), 'instagram', 'tiktok'.
+    Retourne un JSON structuré prêt à être envoyé au webhook Make.com.
+    """
+    marche = marche.lower()
+    reseau = reseau.lower()
+    if marche not in MARCHES:
+        return json.dumps({"erreur": "Marché inconnu."}, ensure_ascii=False)
+
+    drapeau = MARCHES[marche]["emoji_drapeau"]
+
+    # Cherche la faille dans la base statique
+    faille_data = next(
+        (f for f in FAILLES_CONCURRENTS_BASE if f["faille"] == faille and marche in f["marches"]),
+        None,
+    )
+
+    # Templates de posts par faille et réseau
+    POSTS_TEMPLATES = {
+        "formulaire_statique": {
+            "linkedin": (
+                "{stat_choc}\n\n"
+                "La plupart des agences à {marche_label} ont un formulaire de contact.\n"
+                "Aucune n'a construit le moteur d'automation derrière.\n\n"
+                "Voici exactement ce que nous avons déployé :\n\n"
+                "→ Soumission formulaire\n"
+                "→ Make.com capte le lead en temps réel\n"
+                "→ WhatsApp + SMS envoyé au prospect en < 90 secondes\n"
+                "→ Si pas de réponse : relance automatique J+1 / J+3 / J+7\n"
+                "→ Lead scoré par IA et routé vers le bon commercial\n\n"
+                "Résultat sur 90 jours : +340% de leads contactés dans la fenêtre critique.\n\n"
+                "Commentez « {cta_keyword} » et notre automation vous envoie le blueprint complet en DM.\n\n"
+                "#AIAutomation #LeadGeneration #WebdesignAndCo"
+            ),
+            "instagram": (
+                "{stat_choc}\n\n"
+                "Votre formulaire de contact vous coûte des clients. Voici le fix :\n\n"
+                "✅ Make.com capte chaque lead\n"
+                "✅ WhatsApp/SMS < 90 secondes\n"
+                "✅ Relances automatiques multi-canal\n"
+                "✅ Zéro intervention manuelle\n\n"
+                "👇 Commentez « {cta_keyword} » pour recevoir le blueprint gratuit\n\n"
+                "#AIAutomation #LeadGeneration #WebdesignAndCo"
+            ),
+            "tiktok": (
+                "🎬 SCRIPT TIKTOK\n"
+                "ACCROCHE (0-3s) : « {stat_choc} »\n\n"
+                "DÉVELOPPEMENT (3-35s) :\n"
+                "Votre formulaire de contact vous fait perdre des clients. "
+                "Nous avons automatisé la réponse en 90 secondes avec Make.com. "
+                "WhatsApp instantané. Relances automatiques. Zéro travail manuel.\n\n"
+                "CTA (35-45s) : « Commentez {cta_keyword} pour le blueprint ! »\n\n"
+                "#AIAutomation #LeadGeneration #WebdesignAndCo"
+            ),
+        },
+        "relance_manuelle": {
+            "linkedin": (
+                "{stat_choc}\n\n"
+                "En 2025, relancer ses prospects à la main, c'est du travail de stagiaire.\n"
+                "Voici la séquence que nous avons automatisée pour nos clients :\n\n"
+                "→ Lead entrant → CRM mis à jour automatiquement\n"
+                "→ Email de bienvenue personnalisé : J+0 (immédiat)\n"
+                "→ WhatsApp de suivi : J+1\n"
+                "→ SMS de relance douce : J+3\n"
+                "→ Email de dernière chance : J+7\n"
+                "→ IA analyse le taux d'ouverture et adapte le prochain message\n\n"
+                "Résultat : 67% de leads récupérés qui auraient été abandonnés.\n\n"
+                "Commentez « {cta_keyword} » et notre automation vous envoie le schéma Make.com complet.\n\n"
+                "#SalesAutomation #MakeComWorkflow #WebdesignAndCo"
+            ),
+            "instagram": (
+                "{stat_choc}\n\n"
+                "Notre séquence de relance automatisée :\n\n"
+                "✅ J+0 : Email personnalisé (IA)\n"
+                "✅ J+1 : WhatsApp\n"
+                "✅ J+3 : SMS\n"
+                "✅ J+7 : Dernier email\n"
+                "✅ 0 action manuelle requise\n\n"
+                "👇 Commentez « {cta_keyword} » pour le workflow Make.com\n\n"
+                "#SalesAutomation #MakeComWorkflow #WebdesignAndCo"
+            ),
+            "tiktok": (
+                "🎬 SCRIPT TIKTOK\n"
+                "ACCROCHE : « {stat_choc} »\n\n"
+                "DÉVELOPPEMENT : Voici notre séquence de relance automatisée — "
+                "email J+0, WhatsApp J+1, SMS J+3, relance IA J+7. Zéro action manuelle.\n\n"
+                "CTA : « Commentez {cta_keyword} ! »\n\n"
+                "#SalesAutomation #MakeComWorkflow #WebdesignAndCo"
+            ),
+        },
+        "audit_manuel": {
+            "linkedin": (
+                "{stat_choc}\n\n"
+                "Chaque heure passée à préparer un audit manuellement est une heure "
+                "non facturée et un prospect qui attend.\n\n"
+                "Notre process automatisé :\n\n"
+                "→ URL du prospect soumise\n"
+                "→ Make.com déclenche l'analyse (Semrush + PageSpeed + Screaming Frog)\n"
+                "→ Claude AI compile le rapport en langage client\n"
+                "→ Loom personnalisé généré automatiquement\n"
+                "→ Email + WhatsApp envoyés au prospect avec le rapport\n\n"
+                "Délai : 12 minutes. Résultat : taux de closing de nos audits = 68%.\n\n"
+                "Commentez « {cta_keyword} » pour recevoir le blueprint de notre machine à audits.\n\n"
+                "#AIAutomation #SalesProcess #WebdesignAndCo"
+            ),
+            "instagram": (
+                "{stat_choc}\n\n"
+                "Notre audit automatisé en 12 min :\n\n"
+                "✅ Analyse SEO + Performance auto\n"
+                "✅ Rapport IA rédigé pour le client\n"
+                "✅ Loom personnalisé généré\n"
+                "✅ Envoi WhatsApp automatique\n\n"
+                "👇 Commentez « {cta_keyword} » pour le blueprint\n\n"
+                "#AIAutomation #SalesProcess #WebdesignAndCo"
+            ),
+            "tiktok": (
+                "🎬 SCRIPT TIKTOK\n"
+                "ACCROCHE : « {stat_choc} »\n\n"
+                "DÉVELOPPEMENT : Notre audit client prend 12 minutes grâce à Make.com + IA. "
+                "Analyse automatique, rapport rédigé, Loom envoyé. L'agence d'en face en fait 4h.\n\n"
+                "CTA : « Commentez {cta_keyword} ! »\n\n"
+                "#AIAutomation #AgencyLife #WebdesignAndCo"
+            ),
+        },
+        "reporting_manuel": {
+            "linkedin": (
+                "{stat_choc}\n\n"
+                "Pendant que vos concurrents passent leurs week-ends sur Excel,\n"
+                "voici notre pipeline de reporting automatisé :\n\n"
+                "→ Google Analytics 4 + Search Console → Make.com\n"
+                "→ Semrush API → agrégation des KPIs\n"
+                "→ Claude AI → rédaction du commentaire exécutif\n"
+                "→ PDF généré et branded automatiquement\n"
+                "→ Email + WhatsApp client le 1er du mois à 09h00\n\n"
+                "Temps passé : 0 minute. Satisfaction client : +41% vs reporting manuel.\n\n"
+                "Commentez « {cta_keyword} » pour le workflow Make.com complet.\n\n"
+                "#AgencyAutomation #ClientReporting #WebdesignAndCo"
+            ),
+            "instagram": (
+                "{stat_choc}\n\n"
+                "Notre reporting 100% automatisé :\n\n"
+                "✅ GA4 + Semrush → Make.com\n"
+                "✅ Rapport IA rédigé\n"
+                "✅ PDF branded auto-généré\n"
+                "✅ Envoi client automatique\n"
+                "✅ 0 minute de travail manuel\n\n"
+                "👇 Commentez « {cta_keyword} » pour le workflow\n\n"
+                "#AgencyAutomation #ClientReporting #WebdesignAndCo"
+            ),
+            "tiktok": (
+                "🎬 SCRIPT TIKTOK\n"
+                "ACCROCHE : « {stat_choc} »\n\n"
+                "DÉVELOPPEMENT : Notre rapport client se génère seul chaque mois — "
+                "GA4, Semrush, IA, PDF, WhatsApp. Zéro Excel, zéro dimanche au bureau.\n\n"
+                "CTA : « Commentez {cta_keyword} ! »\n\n"
+                "#AgencyAutomation #AgencyLife #WebdesignAndCo"
+            ),
+        },
+    }
+
+    # Stat choc et CTA par défaut si faille libre (non dans la base)
+    if faille_data:
+        stat_choc = faille_data["stat_choc"]
+        cta_keyword = faille_data["cta_keyword"]
+        solution_make = faille_data["solution_make"]
+    else:
+        stat_choc = f"Les agences traditionnelles à {marche.capitalize()} perdent des leads qualifiés chaque jour faute d'automation."
+        cta_keyword = "BLUEPRINT"
+        solution_make = f"Make.com + IA → automatisation complète du pipeline pour les agences à {marche.capitalize()}"
+
+    marche_label = {"france": "France", "dubai": "Dubai", "usa": "USA"}.get(marche, marche.capitalize())
+
+    # Sélection du template
+    template_pool = POSTS_TEMPLATES.get(faille, POSTS_TEMPLATES["formulaire_statique"])
+    template = template_pool.get(reseau, template_pool["linkedin"])
+
+    texte_post = template.format(
+        stat_choc=stat_choc,
+        marche_label=marche_label,
+        cta_keyword=cta_keyword,
+        solution_make=solution_make,
+        drapeau=drapeau,
+    )
+
+    # Hashtags réseau (max 3 pour LinkedIn, conformément aux guidelines)
+    hashtags_pool = HASHTAGS_BASE.get(reseau, HASHTAGS_BASE["linkedin"]).get(marche, [])
+    nb_hashtags = 3 if reseau == "linkedin" else (5 if reseau == "tiktok" else 8)
+    hashtags = " ".join(hashtags_pool[:nb_hashtags])
+
+    payload = {
+        "type": "post_concurrent",
+        "faille": faille,
+        "marche": marche,
+        "reseau": reseau,
+        "drapeau": drapeau,
+        "cta_keyword": cta_keyword,
+        "solution_make": solution_make,
+        "texte_post": texte_post,
+        "hashtags": hashtags,
+        "image_url": generer_image_url(faille.replace("_", " "), reseau),
+        "timestamp": datetime.now().isoformat(),
+        "webhook_ready": True,
+    }
+
+    return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
 @mcp.tool()
@@ -1110,6 +1600,51 @@ def run_webhook_server():
                 marche=data.get("marche", "france"),
                 objectif=data.get("objectif", "engagement"),
             ),
+        })
+
+    @app.post("/webhook/surveiller-concurrence")
+    async def webhook_surveiller_concurrence(request: Request):
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        marche = data.get("marche", "france")
+        inclure_tiktok = data.get("inclure_tiktok", False)
+        mot_cle_tiktok = data.get("mot_cle_tiktok", "")
+        return JSONResponse({
+            "status": "success",
+            "rapport": surveiller_concurrence(
+                marche=marche,
+                inclure_tiktok=inclure_tiktok,
+                mot_cle_tiktok=mot_cle_tiktok,
+            ),
+        })
+
+    @app.post("/webhook/post-concurrent")
+    async def webhook_post_concurrent(request: Request):
+        """
+        Génère et envoie vers Make un post LinkedIn/IG/TikTok attaquant une faille concurrentielle.
+        Body JSON : { "faille": "formulaire_statique", "marche": "dubai", "reseau": "linkedin", "envoyer_make": true }
+        Failles disponibles : formulaire_statique | relance_manuelle | audit_manuel | reporting_manuel | texte libre
+        """
+        verifier_secret(request.headers.get("x-webhook-secret", ""))
+        data = await request.json()
+        faille = data.get("faille", "formulaire_statique")
+        marche = data.get("marche", "france")
+        reseau = data.get("reseau", "linkedin")
+        envoyer_make = data.get("envoyer_make", True)
+
+        post_json = generer_post_concurrent(faille=faille, marche=marche, reseau=reseau)
+        payload = json.loads(post_json)
+
+        make_result = {}
+        if envoyer_make:
+            make_result = envoyer_vers_make(payload)
+            if make_result.get("status") == "envoyé":
+                enregistrer_publication(faille, marche, reseau, ton="concurrent", source="post_concurrent")
+
+        return JSONResponse({
+            "status": "success",
+            "post": payload,
+            "make_result": make_result,
         })
 
     @app.post("/webhook/envoyer-vers-make")
