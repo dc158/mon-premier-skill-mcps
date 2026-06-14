@@ -1,0 +1,20 @@
+name: SSH Server Connection Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Connexion SSH et vérification serveur
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 194.164.74.155
+          port: 65002
+          username: u670292903
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo 'Connexion OK'
+            php --version
+            wp --info --path=/home/u670292903/domains/webdesignandco.org/public_html/
