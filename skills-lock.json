@@ -38,6 +38,12 @@
       "skillPath": "nano-banana-2/SKILL.md",
       "computedHash": "1f8e3c29a2ac938e8f8d874a699ebcd4ed49d604cc3b8ea45d2eeadfc84f8382"
     },
+    "remotion-best-practices": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion/SKILL.md",
+      "computedHash": "006f8413941b59eff54a7ce64851b8a2fb79e7a3a5f1a895e97a48f01482553d"
+    },
     "seedance-v2": {
       "source": "agentspace-so/runcomfy-agent-skills",
       "sourceType": "github",
