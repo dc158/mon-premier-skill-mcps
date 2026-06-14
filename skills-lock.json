@@ -20,6 +20,12 @@
       "skillPath": "skills/find-skills/SKILL.md",
       "computedHash": "d31e234f0c90694a670222cdd1dafa853e051d7066beda389f1097c22dadd461"
     },
+    "kling-3-0": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "kling-3-0/SKILL.md",
+      "computedHash": "9eecfd9b35848d58a46e83acfb69325a2bf7960842b0b372ca33b29c0e154fc9"
+    },
     "nano-banana-2": {
       "source": "agentspace-so/runcomfy-agent-skills",
       "sourceType": "github",
