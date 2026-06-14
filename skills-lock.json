@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": {
+    "community-manager-webdesign-co": {
+      "source": "dc158/mon-premier-skill-mcps",
+      "ref": "claude/npx-skills-add-zrf2vs",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "21132975d0417287379d22f7cbdbb958c1f7b9c95e90ce6be7631d3392cd6611"
+    }
+  }
+}
