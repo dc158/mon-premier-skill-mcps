@@ -8,6 +8,12 @@
       "skillPath": "SKILL.md",
       "computedHash": "21132975d0417287379d22f7cbdbb958c1f7b9c95e90ce6be7631d3392cd6611"
     },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "d31e234f0c90694a670222cdd1dafa853e051d7066beda389f1097c22dadd461"
+    },
     "nano-banana-2": {
       "source": "agentspace-so/runcomfy-agent-skills",
       "sourceType": "github",
