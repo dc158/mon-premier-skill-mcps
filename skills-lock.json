@@ -32,6 +32,12 @@
       "skillPath": "seedance-v2/SKILL.md",
       "computedHash": "e3f978a99bcbfc1656c6ea03882d9602237635ed800c88d47e151cbd1022cd09"
     },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/skill-creator/SKILL.md",
+      "computedHash": "5ea13a6d9f0d4bb694405d79acd00cadec0d21bb138c4dd10fcf3c500cb835c2"
+    },
     "video-edit": {
       "source": "agentspace-so/runcomfy-agent-skills",
       "sourceType": "github",
