@@ -14,6 +14,12 @@
       "skillPath": "nano-banana-2/SKILL.md",
       "computedHash": "1f8e3c29a2ac938e8f8d874a699ebcd4ed49d604cc3b8ea45d2eeadfc84f8382"
     },
+    "seedance-v2": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "seedance-v2/SKILL.md",
+      "computedHash": "e3f978a99bcbfc1656c6ea03882d9602237635ed800c88d47e151cbd1022cd09"
+    },
     "video-edit": {
       "source": "agentspace-so/runcomfy-agent-skills",
       "sourceType": "github",
