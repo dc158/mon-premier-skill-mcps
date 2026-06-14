@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "ace-step": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "ace-step/SKILL.md",
+      "computedHash": "312628879affd4999954a493aed945f28a103e6da5ef8818dd525ca57ce4ffcf"
+    },
     "agent-browser": {
       "source": "vercel-labs/agent-browser",
       "sourceType": "github",
