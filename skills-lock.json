@@ -7,6 +7,12 @@
       "sourceType": "github",
       "skillPath": "SKILL.md",
       "computedHash": "21132975d0417287379d22f7cbdbb958c1f7b9c95e90ce6be7631d3392cd6611"
+    },
+    "video-edit": {
+      "source": "agentspace-so/runcomfy-agent-skills",
+      "sourceType": "github",
+      "skillPath": "video-edit/SKILL.md",
+      "computedHash": "8db3460bb7f1d42e6f6e4ebf90054b9da161ce71de0a27c1020ba53c937c57cc"
     }
   }
 }
