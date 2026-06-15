@@ -12,7 +12,7 @@ jobs:
         with:
           host: 194.164.74.155
           username: u670292903
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           port: 65002
           script: |
             echo "Connexion OK"
