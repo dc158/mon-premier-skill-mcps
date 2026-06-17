@@ -1,20 +1,143 @@
-name: SSH Server Connection Check
+name: WordPress Maintenance - Backup, Updates & Security Scan
 
 on:
   workflow_dispatch:
 
 jobs:
-  check:
+  wordpress-maintenance:
     runs-on: ubuntu-latest
     steps:
-      - name: Test SSH connection
+      - name: "ETAPE 1 - Backup base de données"
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: 194.164.74.155
           username: u670292903
           password: ${{ secrets.SSH_PASSWORD }}
           port: 65002
+          command_timeout: 120m
           script: |
-            echo "Connexion OK"
-            php --version
-            wp --info
+            WP_PATH=/home/u670292903/domains/webdesignandco.org/public_html
+            BACKUP_FILE=/home/u670292903/backup_avant_update_$(date +%Y%m%d_%H%M).sql
+
+            echo "========================================"
+            echo "ETAPE 1 : BACKUP BASE DE DONNEES"
+            echo "========================================"
+            wp db export "$BACKUP_FILE" --allow-root --path="$WP_PATH"
+            if [ $? -eq 0 ]; then
+              echo "Backup OK : $BACKUP_FILE"
+              ls -lh "$BACKUP_FILE"
+            else
+              echo "ERREUR : Backup échoué !"
+              exit 1
+            fi
+
+      - name: "ETAPE 2 - Versions plugins AVANT mise à jour"
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: 194.164.74.155
+          username: u670292903
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 65002
+          command_timeout: 30m
+          script: |
+            WP_PATH=/home/u670292903/domains/webdesignandco.org/public_html
+            echo "========================================"
+            echo "ETAPE 2 : VERSIONS AVANT MISE A JOUR"
+            echo "========================================"
+            wp plugin list --allow-root --path="$WP_PATH" --fields=name,status,version,update
+
+      - name: "ETAPE 3 - Mise à jour des plugins"
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: 194.164.74.155
+          username: u670292903
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 65002
+          command_timeout: 60m
+          script: |
+            WP_PATH=/home/u670292903/domains/webdesignandco.org/public_html
+            echo "========================================"
+            echo "ETAPE 3 : MISE A JOUR DES PLUGINS"
+            echo "========================================"
+            for PLUGIN in latepoint elementor-pro hostinger hostinger-ai; do
+              echo ""
+              echo "--- Mise à jour : $PLUGIN ---"
+              wp plugin update "$PLUGIN" --allow-root --path="$WP_PATH" 2>&1
+            done
+
+      - name: "ETAPE 4 - Versions plugins APRÈS mise à jour"
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: 194.164.74.155
+          username: u670292903
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 65002
+          command_timeout: 30m
+          script: |
+            WP_PATH=/home/u670292903/domains/webdesignandco.org/public_html
+            echo "========================================"
+            echo "ETAPE 4 : VERSIONS APRES MISE A JOUR"
+            echo "========================================"
+            wp plugin list --allow-root --path="$WP_PATH" --fields=name,status,version,update
+
+      - name: "ETAPE 5 - Scan sécurité Wordfence"
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: 194.164.74.155
+          username: u670292903
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 65002
+          command_timeout: 60m
+          script: |
+            WP_PATH=/home/u670292903/domains/webdesignandco.org/public_html
+            echo "========================================"
+            echo "ETAPE 5 : SCAN SECURITE"
+            echo "========================================"
+
+            echo ""
+            echo "--- 5a. Vérification intégrité WordPress core ---"
+            wp core verify-checksums --allow-root --path="$WP_PATH" 2>&1
+
+            echo ""
+            echo "--- 5b. Fichiers PHP modifiés récemment (hors uploads) ---"
+            find "$WP_PATH" -name "*.php" \
+              -newer "$WP_PATH/wp-config.php" \
+              -not -path "*/wp-content/uploads/*" \
+              | head -50
+
+            echo ""
+            echo "--- 5c. Code obfusqué eval(base64_decode) ---"
+            RESULT=$(grep -r "eval(base64_decode" "$WP_PATH" --include="*.php" -l 2>/dev/null)
+            if [ -z "$RESULT" ]; then
+              echo "OK - Aucun fichier suspect trouvé"
+            else
+              echo "ATTENTION - Fichiers suspects :"
+              echo "$RESULT"
+            fi
+
+            echo ""
+            echo "--- 5d. Fonctions dangereuses dans wp-content/uploads ---"
+            RESULT2=$(grep -r "shell_exec\|passthru\|base64_decode" \
+              "$WP_PATH/wp-content/uploads" --include="*.php" -l 2>/dev/null)
+            if [ -z "$RESULT2" ]; then
+              echo "OK - Aucun PHP malveillant dans uploads"
+            else
+              echo "ATTENTION - PHP suspects dans uploads :"
+              echo "$RESULT2"
+            fi
+
+            echo ""
+            echo "--- 5e. Fichiers PHP dans uploads (ne devrait pas exister) ---"
+            RESULT3=$(find "$WP_PATH/wp-content/uploads" \
+              \( -name "*.php" -o -name "*.phtml" -o -name "*.php5" \) 2>/dev/null)
+            if [ -z "$RESULT3" ]; then
+              echo "OK - Aucun fichier PHP dans uploads"
+            else
+              echo "ATTENTION :"
+              echo "$RESULT3"
+            fi
+
+            echo ""
+            echo "========================================"
+            echo "MAINTENANCE TERMINEE - $(date)"
+            echo "========================================"
